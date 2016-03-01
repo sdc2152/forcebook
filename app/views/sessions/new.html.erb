@@ -1,0 +1,179 @@
+<link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+
+<div id="navwrapper">
+  <div id="navbar">
+    <table class="tablewrapper">
+    <tr>
+      <td class="row1">Email or Phone</td>
+      <td class="row1">Password</td>
+    </tr>
+    <tr>
+      <form action="<%= session_url %>" method="post">
+        <input type="hidden"
+        name="authenticity_token"
+        id=""
+        value="<%= form_authenticity_token %>">
+        <td>
+          <input
+          type="text"
+          name="session[email]"
+          class="inputtext">
+        </td>
+        <td>
+          <input
+          type="password"
+          name="session[password]"
+          class="inputtext">
+        </td>
+        <td>
+          <input type="submit" value="Log In" >
+        </td>
+      </form>
+    </tr>
+
+
+    <tr>
+      <td>
+        <div class="row2"><input type="checkbox" checked>Keep me logged in</div>
+      </td>
+      <td class="row2 h">Forgot your password?</td>
+  </table>
+
+    <h1 class="logowrapper">forcebook</h1>
+
+  </div>
+</div>
+
+<div id="contentwrappersignin">
+  <div id="contentsignin">
+    <div id="leftbodsignin">
+
+      <div class="connect bolder">
+        Connect with friends and the
+        world around you on Facebook.</div>
+
+      <div class="leftbar">
+        <img src="https://fbcdn-dragon-a.akamaihd.net/hphotos-ak-xap1/t39.2365-6/851565_602269956474188_918638970_n.png" alt="" class="iconwrap fb1"/>
+        <div class="fb1">
+          <span class="rowtext">See photos and updates</span>
+          <span class="rowtext2 fb1">from friends in News Feed</span>
+        </div>
+      </div>
+
+        <div class="leftbar">
+        <img src="https://fbcdn-dragon-a.akamaihd.net/hphotos-ak-xap1/t39.2365-6/851585_216271631855613_2121533625_n.png" alt="" class="iconwrap fb1"/>
+        <div class="fb1">
+          <span class="rowtext">Share what's new</span>
+          <span class="rowtext2 fb1">in your life on your timeline</span>
+          </div>
+        </div>
+
+      <div class="leftbar">
+        <img src="https://fbcdn-dragon-a.akamaihd.net/hphotos-ak-xap1/t39.2365-6/851558_160351450817973_1678868765_n.png " alt="" class="iconwrap fb1"/>
+        <div class="fb1">
+          <span class="rowtext">Find more</span>
+          <span class="rowtext2 fb1">of what you're looking for with graph search</span>
+        </div>
+      </div>
+
+
+    </div>
+
+    <div id="rightbod">
+      <div class="signup bolder">Sign Up</div>
+      <div class="free bolder">The force will be with you and it always will be</div>
+
+    <form class="formbox" action="<%= users_url %>" method="post">
+      <input type="hidden" name="authenticity_token" id=""
+      value="<%= form_authenticity_token %>">
+
+      <input name="user[first_name]" type="text" class="inputbody in1" placeholder="First name">
+      <input name="user[last_name]" type="text" class="inputbody in1 fr" placeholder="Last name">
+
+      <input name="user[email]" type="text" class="inputbody in2" placeholder="Email">
+
+
+      <input type="text" class="inputbody in2" placeholder="Re-enter email or mobile number">
+
+
+      <input name="user[password]" type="password" class="inputbody in2" placeholder="New password">
+      <div class="bday">Birthday</div>
+
+      <span data-type="selectors">
+        <span>
+          <select title="Month" class="selectbody" name="user[birthday_month]">
+            <option value="0" selected="1">Month</option>
+            <option value="1">Jan</option>
+            <option value="2">Feb</option>
+            <option value="3">Mar</option>
+            <option value="4">Apr</option>
+            <option value="5">May</option>
+            <option value="6">Jun</option>
+            <option value="7">Jul</option>
+            <option value="8">Aug</option>
+            <option value="9">Sep</option>
+            <option value="10">Oct</option>
+            <option value="11">Nov</option>
+            <option value="12">Dec</option>
+          </select>
+          <select title="Day" class="selectbody" name="user[birthday_day]">
+            <option value="0" selected="1">Day</option>
+            <% 31.times do |num| %>
+              <option value="<%=num + 1%>"><%=num + 1%></option>
+            <%end %>
+          </select>
+
+          <select title="Year"class="selectbody" name="user[birthday_year]">
+            <option value="0" selected="1">Year</option>
+            <% 100.times do |num| %>
+              <option value="<%=2016 - num%>"><%=2016 - num%></option>
+            <%end %>
+          </select>
+        </span>
+
+      <span data-type="radio" class="spanpad">
+        <input
+          type="radio"
+          value="F"
+          id="fem"
+          class="m0"
+          name="user[gender]">
+
+        <label for="fem" class="gender">Female
+        </label>
+
+        <input
+          type="radio"
+          value="M"
+          id="male"
+          class="m0"
+          name="user[gender]">
+
+        <label for="male" class="gender">Male
+        </label>
+
+      </span>
+    <div class="formbox">
+      <div class="agree">
+        By clicking Sign Up, you agree to our
+        <div class="link">Terms
+        </div>
+        and that you have read our
+        <div class="link">Data Use Policy
+        </div>, including our
+        <div class="link">Cookie Use
+        </div>.
+      </div>
+    </div>
+    <div class="formbox">
+      <button type="submit" class="signbut bolder">Sign Up</button>
+    </div>
+    <div class="formbox">
+      <div class="create">
+        <div class="link h">Create a Page</div>
+        for a celebrity, band or business.
+      </div>
+    </div>
+    </div>
+   </div>
+  </div>
