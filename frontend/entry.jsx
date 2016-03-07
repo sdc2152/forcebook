@@ -10,6 +10,8 @@ var PostIndex = require('./components/posts/postIndex');
 var PostIndexItem = require('./components/posts/postIndexItem');
 var UserSettings = require('./components/userSettings');
 var UserPhotos = require('./components/userPhotos');
+var About = require('./components/about');
+var FriendsIndex = require('./components/friendships/friendsIndex');
 
 
 var hashHistory = require('react-router').hashHistory;
@@ -20,6 +22,7 @@ var ApiUtil = require('./util/apiUtil.js');
 var App = React.createClass({
 
   render: function () {
+
     if(window.currentUserId !== undefined){
       return(
         <div id="pagewrap">
@@ -35,8 +38,11 @@ var routes = (
   <Route path="/" component={App}>
     <IndexRoute component={UserProfile} />
     <Route path="users/:user_id" component={UserSettings} >
-      <Route path="/photos" component={UserPhotos} />
-    </Route>
+        <IndexRoute component={PostIndex} />
+        <Route path="timeline" component={PostIndex}/>
+        <Route path="about" component={About} />
+        <Route path="friends" component={FriendsIndex} />
+      </Route>
   </Route>
 );
 

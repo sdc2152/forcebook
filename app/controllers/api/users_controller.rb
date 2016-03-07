@@ -1,6 +1,6 @@
 class Api::UsersController < ApplicationController
   def show
-    @user = User.find(params[:id])
+    @user = User.includes(:posts, :comments, :photos).where(id: params[:id]).to_a.first
     render :show
   end
 

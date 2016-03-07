@@ -2,7 +2,7 @@ var React = require('react');
 var UserStore = require('../stores/userStore');
 var ApiUtil = require('../util/apiUtil');
 var ProfileLeft = require('./profileLeft');
-var PostIndex = require('./posts/postIndex.jsx');
+var Timeline = require('./timelines/timeline.jsx');
 
 
 
@@ -33,13 +33,11 @@ var UserProfile = React.createClass({
             <div id="leftmain">
               <ProfileLeft user={this.state.user}/>
             </div>
-            <div id="rightmain">
+              <div id="content">
+                <Timeline />
+              </div>
               <div id="rightcol">
               </div>
-              <div id="content">
-                <PostIndex user={this.state.user}/>
-              </div>
-            </div>
           </div>
         </div>
       );

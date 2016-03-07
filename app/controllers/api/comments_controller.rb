@@ -1,7 +1,11 @@
 class Api::CommentsController < ApplicationController
 
   def index
-    @comments = Comment.all
+    if params[:user_id]
+      @comments = Comment.includes(:author, :post, :replies).where(author_id: params[:user_id]).order(created_at: :desc)
+    else
+      @comments = Comment.includes(:author, :post, :replies).all
+    end
   end
 
   def create

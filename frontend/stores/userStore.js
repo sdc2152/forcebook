@@ -1,6 +1,7 @@
 var Store = require('flux/utils').Store;
 var AppDispatcher = require('../dispatcher.js');
 var UserConstants = require('../constants/userConstants.js');
+var aggregateConstants = require('../constants/aggregateConstants.js');
 var UserStore = new Store(AppDispatcher);
 
 var _users = [];
@@ -15,11 +16,17 @@ UserStore.__onDispatch = function(payload){
       break;
     case UserConstants.USERS_RECEIVED:
       resetUsers(payload.users)
-      UserStore.__emitChange();
       break;
   }
 };
 
+UserStore.changeDisplayedUser = function(newUserId){
+  _displayedUser = find(newUserId)
+};
+
+UserStore.displayedUser = function() {
+  return _displayedUser
+};
 
 UserStore.all = function (){
   return _users
@@ -27,14 +34,24 @@ UserStore.all = function (){
 
 var resetUsers = function (users) {
   _users = users
+  UserStore.__emitChange();
+};
+
+var find = function (userId) {
+  var foundUser;
+  _users.forEach(function (user) {
+    if (user.id == userId){
+      foundUser = user
+    }
+  })
+  return foundUser
 };
 
 var resetUser = function (user) {
-  console.log(user.id);
   _user = user;
 };
 
-UserStore.resetUser = function (userNow) {
+UserStore.resetCurrentUser = function (userNow) {
   var index = 0;
   _users.forEach(function(user, i) {
     if (user.id === userNow.id) {
@@ -47,12 +64,12 @@ UserStore.resetUser = function (userNow) {
 UserStore.find = function (userId) {
   var foundUser;
   _users.forEach(function (user) {
-    if (user.id === userId){
+    if (user.id == userId){
       foundUser = user
     }
   })
   return foundUser
-}
+},
 
 
 module.exports = UserStore;

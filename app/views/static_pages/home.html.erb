@@ -4,6 +4,7 @@
     window.currentUserId = <%= current_user.id  %>
     window.currentUserName = "<%= current_user %>"
   <% end %>
+  <% require_signed_in! %>
 </script>
 
 <div id='root'>

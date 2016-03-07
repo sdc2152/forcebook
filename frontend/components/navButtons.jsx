@@ -1,6 +1,7 @@
 var React = require('react');
 var hashHistory = require('react-router').hashHistory;
-
+var UserStore = require('../stores/userStore');
+var ApiUtil = require('../util/apiUtil');
 
 var NavButtons = React.createClass({
   redirectHome: function(event) {
@@ -11,8 +12,12 @@ var NavButtons = React.createClass({
 
   redirectProfile: function(event) {
     event.preventDefault()
-
     hashHistory.push('users/' + window.currentUserId)
+  },
+
+  logout: function(event){
+    event.preventDefault()
+    ApiUtil.logOut()
   },
 
   render: function() {
@@ -62,6 +67,10 @@ var NavButtons = React.createClass({
 
             </ul>
           </div>
+        </div>
+
+        <div className="adjustprofilebutton">
+          <button onClick={this.logout} className="navbutton clickable">logout</button>
         </div>
 
       </div>

@@ -40,20 +40,47 @@ class User < ActiveRecord::Base
   validates :session_token, :email, uniqueness: true
 
   has_many :posts,
-    class_name: "Post",
     foreign_key: :author_id,
-    primary_key: :id
+    primary_key: :id,
+    class_name: "Post"
 
   has_many :comments,
-    class_name: "Comment",
     foreign_key: :author_id,
-    primary_key: :id
+    primary_key: :id,
+    class_name: "Comment"
 
 
   has_many :photos,
-    class_name: "Photo",
     foreign_key: :user_id,
-    primary_key: :id
+    primary_key: :id,
+    class_name: "Photo"
+
+  has_many :requesting_friendships,
+    foreign_key: :user_id,
+    primary_key: :id,
+    class_name: "Friendship"
+
+  has_many :receiving_friendships,
+    foreign_key: :friend_id,
+    primary_key: :id,
+    class_name: "Friendship"
+
+
+
+  def friends
+    requesting_friendships = self.requesting_friendships.includes(receiving: :photos).where(confirmed: true).to_a
+    receiving_friendships = self.receiving_friendships.includes(giving: :photos).where(confirmed: true).to_a
+    all_friendships = requesting_friendships + receiving_friendships
+    all_friends = all_friendships.map do |friendship|
+      friendship.user_id == self.id ? friendship.receiving : friendship.giving
+    end
+    all_friends
+  end
+
+  def name
+    self.first_name + ' ' + self.last_name
+  end
+
 
   def self.find_by_credentials(params)
     user = User.find_by(email: params[:email])
@@ -79,9 +106,10 @@ class User < ActiveRecord::Base
     self.session_token
   end
 
-  def photo_object
-
+  def self.search(query)
+    where("username like ?", "%#{query}%")
   end
+
 
   private
 

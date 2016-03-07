@@ -22,7 +22,7 @@ var CommentIndexItem = React.createClass({
     var username = this.props.comment.user.first_name + " " + this.props.comment.user.last_name
     return (
       <li>
-        <a onClick={this.deleteComment}>delete</a>
+        {window.currentUserId === this.props.comment.author_id ? <a onClick={this.deleteComment}>delete</a> : null }
         <div className="indcommentwrapper">
           <div className="commentcontent">
             <div className="commenthide">

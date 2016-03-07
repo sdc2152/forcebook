@@ -8,7 +8,7 @@
 # 100.times do |num|
 #   Post.create!({author_id: 1, body: Faker::Hacker.say_something_smart})
 # end
-me = User.new(
+User.create(
   {first_name: "Spencer",
   last_name: "Christensen",
   email: "spencer.christensen88888@gmail.com",
@@ -20,4 +20,18 @@ me = User.new(
   gender: "M"}
 )
 
-me.save!
+100.times do |num|
+  a = User.create(
+    {first_name: Faker::Name.first_name,
+    last_name: Faker::Name.first_name,
+    email: Faker::Internet.email + num.to_s,
+    password: "sdc12345",
+    friend_request_id: nil,
+    birthday_month: 9,
+    birthday_day: 1,
+    birthday_year: 1989,
+    gender: "M"})
+
+    a.id < 50 ? Friendship.create({user_id: 1, friend_id: a.id, confirmed: true}) : Friendship.create({user_id: num, friend_id: 1})
+
+end

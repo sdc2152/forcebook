@@ -34,14 +34,17 @@ Rails.application.routes.draw do
 
   root to: 'static_pages#home'
 
-  resources :users, only: [:create, :show]
-  resource :session, only: [:new, :create, :show]
+  resources :users, only: [:new, :create, :show]
+  resource :session, only: [:new, :create, :show, :destroy]
+
+  get 'home', to: 'sessions#new'
 
   namespace :api, defaults: { format: :json } do
+    resources :search,           only: [:index, :create, :destroy]
     resources :posts,           only: [:index, :create, :destroy]
     resources :comments,        only: [:index, :create, :destroy]
     resources :friendships,     only: [:create, :show, :destroy]
-    resources :friend_requests, only: [:create, :show, :update, :destroy]
+    resources :timeline,       only: [:index]
     resources :photos,          only: [:index, :create, :show, :update, :destroy]
     resources :users,           only: [:index, :show, :update] do
       resources :photos,           only: [:index, :show]
@@ -50,7 +53,6 @@ Rails.application.routes.draw do
         resources :posts,         only: [:index]
       end
     end
-
   end
 
 end

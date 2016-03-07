@@ -4,6 +4,12 @@ var NavButtons = require('./navButtons');
 
 var Header = React.createClass({
 
+  redirectHome: function(event) {
+    event.preventDefault()
+
+    hashHistory.push('')
+  },
+
   render: function() {
     return (
       <div id="navwrapper" className="home">
@@ -13,7 +19,7 @@ var Header = React.createClass({
             <div className="leftnavwrapper">
               <div className="flogowrapper">
                 <a className="flogo">
-                  <span className="flogoimage"></span>
+                  <span onClick={this.redirectHome} className="flogoimage"></span>
                 </a>
               </div>
 

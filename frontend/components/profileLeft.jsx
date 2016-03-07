@@ -9,7 +9,6 @@ var ProfileLeft = React.createClass({
     hashHistory.push('users/' +  window.currentUserId)
   },
   render: function() {
-
     return (
       <div className="leftnav">
         <div className="proflistwrapper">
@@ -18,7 +17,7 @@ var ProfileLeft = React.createClass({
               <div className="proflistitemcontentwrapper">
 
                 <div className="leftcontentwrapper">
-                  <PhotoShow photo={this.props.user.photos.profile_pic} />
+                  <PhotoShow url={this.props.user.prof_url} type="profile_pic" />
                 </div>
 
                 <div>

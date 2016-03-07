@@ -3,14 +3,17 @@ var LinkedStateMixin = require('react-addons-linked-state-mixin');
 var ApiUtil = require('../../util/apiUtil.js');
 var PhotoShow = require('../photos/photoShow');
 var TextArea = require('react-textarea-autosize');
+var UserStore = require('../../stores/userStore');
+
 
 var PostForm = React.createClass({
   mixins: [LinkedStateMixin],
 
   getInitialState: function() {
     return {
-      author_id: window.currentUserId,
-      body: ''
+      author: UserStore.find(window.currentUserId),
+      body: '',
+      target_id: (this.props.params === undefined ? window.currentUserId : this.props.params.user_id)
     }
   },
 
@@ -46,7 +49,7 @@ var PostForm = React.createClass({
 
           <div className="midpostform">
             <div className="profilepicwrapperform">
-              <PhotoShow photo={this.props.user.photos.profile_pic} />
+              <PhotoShow url={this.state.author.prof_url} type="profile_pic"/>
             </div>
 
             <div className="postarea">

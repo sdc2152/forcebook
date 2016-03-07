@@ -2,6 +2,10 @@ class Api::PostsController < ApplicationController
 
   def index
     @posts = Post.all
+
+    if params[:user_id]
+      @posts = Post.includes({author: :photos}, :comments).where(author_id: params[:user_id]).order(created_at: :desc)
+    end
   end
 
   def create
@@ -24,7 +28,7 @@ class Api::PostsController < ApplicationController
   private
 
   def post_params
-    params.require(:post).permit(:body, :author_id)
+    params.require(:post).permit(:body, :author_id, :target_id)
   end
 
 

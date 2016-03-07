@@ -1,36 +1,26 @@
 var React = require('react');
 var ApiUtil = require('../util/apiUtil');
 var UserStore = require('../stores/userStore');
+var LinkedStateMixin = require('react-addons-linked-state-mixin');
 
 
 
 var SearchBar = React.createClass({
 
   getInitialState: function() {
-    return {search: '', users: UserStore.all(), result: []}
+    return {search: ''}
   },
 
-  componentDidMount: function () {
-    ApiUtil.fetchAllUsers()
+  componentDidUpdate: function () {
+    if (this.state.partial) {
+      ApiUtil.executeSearch(this.state.partial)
+    }
   },
 
   runSearch: function(event){
     event.preventDefault()
-  },
 
-  _onChange: function(event){
-    console.log(this.state);
-    event.preventDefault()
-    this.setState({
-      search: event.target.value,
-      results: this.state.users.map(function(user){
-        if (user.full_name.test(this.state.search)){
-          return user
-        }
-      })
-    })
   },
-
 
   render: function() {
     return (
@@ -40,7 +30,7 @@ var SearchBar = React.createClass({
             <button className="searchbutton" type="submit">
               <i className="searchbuttonimage"></i>
             </button>
-            <input onChange={this._onChange} type="textarea" className="searchinput"></input>
+            <input valueLink={"search"} type="textarea" className="searchinput"></input>
           </form>
         </div>
       </div>

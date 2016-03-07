@@ -6,7 +6,7 @@ var PhotoShow = require('../photos/photoShow');
 
 var PostIndexItem = React.createClass({
   getInitialState: function(){
-    return {user: this.props.user, creationDate: this._timeSincePost()}
+    return {creationDate: this._timeSincePost()}
   },
 
   componentDidMount: function() {
@@ -39,7 +39,7 @@ var PostIndexItem = React.createClass({
   render: function() {
     return (
       <div>
-        <a onClick={this.deletePost}>delete</a>
+        {this.props.user.id === this.props.post.author_id ? <a onClick={this.deletePost}>delete</a> : null }
         <li className="postandcommentwrapper">
           <div className="indpostwrapper">
             <div className="postwrapper">
@@ -48,11 +48,11 @@ var PostIndexItem = React.createClass({
 
                 <div className="posterinfo">
                   <div className="profilepicwrapper">
-                    <PhotoShow photo={this.state.user.photos.profile_pic} />
+                    <PhotoShow url={this.props.user.prof_url} type="profile_pic" />
                   </div>
 
                   <div className="postusername">
-                    {this.state.user.first_name} {this.state.user.last_name}
+                    {this.props.user.first_name} {this.props.user.last_name}
                   </div>
 
                   <div className="posttime">

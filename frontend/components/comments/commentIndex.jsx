@@ -33,8 +33,8 @@ var CommentIndex = React.createClass({
               <div className="commentexpandwrapper">
 
               </div>
-              {this.state.comments.map(function (comment) {
-                return <CommentIndexItem key={comment.id} comment={comment} post={this.props.post}/>;
+              {this.state.comments.map(function (comment, idx) {
+                return <CommentIndexItem key={idx} comment={comment} post={this.props.post}/>;
               }.bind(this))}
             </ul>
           </div>

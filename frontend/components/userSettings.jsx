@@ -5,39 +5,76 @@ var PostForm = require('./posts/postForm');
 var PostIndex = require('./posts/postIndex');
 var PhotoShow = require('./photos/photoShow');
 var PhotoForm = require('./photos/photoForm');
+var About = require('./about');
+var hashHistory = require('react-router').hashHistory;
+var FriendsIndex = require('./friendships/friendsIndex');
+var FriendStore = require('../stores/friendStore');
+var FriendButton = require('./friendButton');
 
 
 
 var UserSettings = React.createClass({
   getInitialState: function() {
-    return {user: UserStore.find(window.currentUserId)}
+    return {user: UserStore.find(this.props.params.user_id),
+      areFriends: FriendStore.areFriends(this.props.params.user_id)}
   },
 
   _onChange: function() {
-    this.setState({user: UserStore.find(window.currentUserId)})
+    this.setState({user: UserStore.find(this.props.params.user_id),
+    areFriends: FriendStore.areFriends(this.props.params.user_id)})
   },
 
   componentDidMount: function() {
     this.listener = UserStore.addListener(this._onChange);
-    ApiUtil.fetchAllUsers();
+    this.friendListener = FriendStore.addListener(this._onChange);
+  },
+
+  componentWillReceiveProps: function(newProps){
+    ApiUtil.fetchAllFriends(this.props.params.user_id);
+    this.setState({user: UserStore.find(newProps.params.user_id),
+    areFriends: FriendStore.areFriends(this.props.params.user_id) });
   },
 
   componentWillUnmount: function(){
     this.listener.remove()
+    this.friendListener.remove()
   },
 
-  render: function() {
+  redirectPostIndex: function(event) {
+    event.preventDefault()
+    hashHistory.push("users/" + this.props.params.user_id + "/timeline")
+  },
 
+  redirectAbout: function(event) {
+    event.preventDefault()
+    hashHistory.push("users/" + this.props.params.user_id + "/about")
+  },
+
+  redirectFriendsIndex: function(event) {
+    event.preventDefault()
+    hashHistory.push("users/" + this.props.params.user_id + "/friends")
+  },
+
+
+  render: function() {
     if (this.state.user !== undefined){
       return (
         <div id="userprofwrapper">
           <div id="usercontentwrappers" className="settingwrap">
-            <div className="profilepicmain">
-              <PhotoShow photo={this.state.user.photos.profile_pic}/>
+            <div className="settingsuserinfo">
+              <div className="profilepicmain">
+                <PhotoShow url={this.state.user.prof_url} type="profile_pic"/>
+              </div>
+              <div className="profilenamemain">
+                <div className="settingusername">
+                  {this.state.user.first_name} {this.state.user.last_name}
+                </div>
+              </div>
             </div>
             <div className="settingheader">
               <div className="settingheaderbanner">
-                <PhotoShow photo={this.state.user.photos.banner_pic}/>
+                <FriendButton currentProfileId={this.props.params.user_id}/>
+                <PhotoShow url={this.state.user.banner_url} type="banner_pic"/>
               </div>
               <div className="settingheaderbottom">
                 <div className="settingbottomleft">
@@ -46,12 +83,14 @@ var UserSettings = React.createClass({
                 <div className="settingbottomright">
                   <div className="settingnavbottomwrapper">
                     <div className="rightbottomcontentwrapper">
-                      <a className="timeline" />
+                      <a className="timeline">
+                        <span className="rightbotomimagewrap"></span>
+                      </a>
                     </div>
 
                     <a title="timeline">
                       <span className="rightbotomimagewrap"></span>
-                      <div onClick={this.goTimeline}>Timeline</div>
+                      <div onClick={this.redirectPostIndex}>Timeline</div>
                     </a>
                   </div>
                   <div className="settingnavbottomwrapper">
@@ -61,7 +100,7 @@ var UserSettings = React.createClass({
 
                     <a title="about">
                       <span className="rightbotomimagewrap"></span>
-                      <div onClick={this.onClick}>About</div>
+                      <div onClick={this.redirectAbout}>About</div>
                     </a>
                   </div>
 
@@ -72,7 +111,7 @@ var UserSettings = React.createClass({
 
                     <a title="friends">
                       <span className="rightbotomimagewrap"></span>
-                      <div onClick={this.onClick}>Friends</div>
+                      <div onClick={this.redirectFriendsIndex}>Friends</div>
                     </a>
                   </div>
                 </div>
@@ -80,24 +119,17 @@ var UserSettings = React.createClass({
               </div>
             </div>
 
-            <div id="leftmain">
-              <div className="photowrapper">
+          </div>
+          <div id="leftmain">
+            <div className="photowrapper">
 
-              </div>
-              <div className="friendswrapper">
+            </div>
+            <div className="friendswrapper">
 
-              </div>
             </div>
           </div>
-
-            <div id="rightmain">
-              <div id="rightcol">
-              </div>
-              <div id="content">
-                <PostIndex user={this.state.user}/>
-              </div>
-            </div>
-          </div>
+          {this.props.children}
+        </div>
       );
     }
     else {
@@ -111,9 +143,3 @@ var UserSettings = React.createClass({
 });
 
 module.exports = UserSettings;
-
-// <PhotoShow photoType="banner_pic" photo={this.state.user.photos.banner_pic}/>
-//
-//
-//
-// <PhotoShow photoType="profile_pic" photo={this.state.user.photos.profile_pic}/>

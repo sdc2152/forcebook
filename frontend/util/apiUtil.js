@@ -2,8 +2,21 @@ var ApiActions = require('../actions/apiActions.js');
 
 module.exports = {
 
-  fetchAllUsers: function () {
 
+  executeSearch: function(searchTerms){
+    $.ajax({
+      url: 'api/search/',
+      method: 'get',
+      dataType: 'json',
+      data: {searchTerms: searchTerms},
+      success: function (results) {
+        ApiActions.receiveSearchResults(results)
+      }
+    });
+  },
+
+
+  fetchAllUsers: function () {
     $.ajax({
       url: "api/users",
       success: function (users) {
@@ -11,6 +24,8 @@ module.exports = {
       }
     })
   },
+
+
   fetchSingleUser: function (id) {
     $.ajax({
       url: "api/users/" + id,
@@ -20,14 +35,16 @@ module.exports = {
     })
   },
 
-  fetchAllPosts: function () {
+  fetchAllPosts: function (userId) {
     $.ajax({
-      url: "api/posts",
+      url: "api/users/" + userId + "/posts",
       success: function (posts) {
         ApiActions.receiveAllPosts(posts);
       }
     })
   },
+
+
   fetchSinglePost: function () {
     $.ajax({
       url: "api/post/" + id,
@@ -58,6 +75,8 @@ module.exports = {
       }
     })
   },
+
+
   deletePost: function (post) {
     $.ajax({
       method: "DELETE",
@@ -179,4 +198,63 @@ module.exports = {
       }
     })
   },
+
+
+
+
+
+
+  fetchAllFriends: function (userId) {
+    $.ajax({
+      url: "api/users/" + userId + "/friendships",
+      success: function (friends) {
+        ApiActions.receiveAllFriends(friends);
+      }
+    })
+  },
+
+  removeFriend: function (friendId) {
+    $.ajax({
+      type: "DELETE",
+      url: "api/friendships/destroy",
+      data: {friendId: friendId},
+      success: function (data) {
+        ApiActions.removeFriend(data.friends);
+      }
+    })
+  },
+
+  sendFriendRequest: function (friendId) {
+    $.ajax({
+      type: "POST",
+      url: "api/friendships/create",
+      data: {friendId: friendId},
+      success: function (data) {
+        ApiActions.sendFriendRequest(data.friendship);
+      }
+    })
+  },
+
+
+
+  fetchTimelineItems: function () {
+    $.ajax({
+      url: "api/timeline",
+      success: function (timeline) {
+        ApiActions.receiveTimeline(timeline);
+      }
+    })
+  },
+
+
+  logOut: function () {
+    $.ajax({
+      type: "DELETE",
+      url: "session",
+      dataType: 'json',
+      success: function (whatever) {
+        window.location.replace("home");
+      }
+    });
+  }
 }

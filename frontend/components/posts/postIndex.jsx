@@ -13,7 +13,7 @@ var PostIndex = React.createClass({
 
   componentDidMount: function () {
     this.listener = PostStore.addListener(this._onChange);
-    ApiUtil.fetchAllPosts();
+    ApiUtil.fetchAllPosts(this.props.params.user_id);
   },
 
   componentWillUnmount: function () {
@@ -26,30 +26,22 @@ var PostIndex = React.createClass({
 
   render: function() {
     return (
-        <div>
+      <div id="rightmain">
+        <div id="rightcol">
+        </div>
+        <div id="content">
           <PostForm user={this.props.user}/>
           <div className="postindexwrapper">
             <ul>
-              {this.state.posts.map(function (post) {
-                return <PostIndexItem key={post.id} post={post} user={this.props.user}/>;
+              {this.state.posts.map(function (post, idx) {
+                return <PostIndexItem key={idx} post={post} user={post.user}/>;
               }.bind(this))}
             </ul>
           </div>
         </div>
+      </div>
     );
   }
-
-
-
-  // render: function() {
-  //   return (
-  //     <ul>
-  //       {this.state.posts.map(function (post) {
-  //         return <PostIndexItem key={post.id} post={post} />;
-  //       })}
-  //     </ul>
-  //   );
-  // }
 
 });
 
