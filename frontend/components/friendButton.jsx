@@ -1,14 +1,31 @@
 var React = require('react');
-var PropTypes = React.PropTypes;
+var ApiUtil = require('../util/apiUtil');
+var FriendStore = require('../stores/friendStore');
+
 
 var FriendButton = React.createClass({
+
+  getInitialState: function() {
+    return {areFriends: FriendStore.areFriends(this.props.currentProfileId)}
+  },
+
+  _onChange: function() {
+    this.setState({areFriends: FriendStore.areFriends(this.props.currentProfileId)})
+  },
+  componentDidMount: function() {
+    this.friendListener = FriendStore.addListener(this._onChange);
+  },
+  componentWillUnmount: function(){
+    this.friendListener.remove()
+  },
+
   removeFriend: function() {
-    ApiUtil.removeFriend(this.props.params.user_id)
+    ApiUtil.removeFriend(this.props.currentProfileId)
     this.setState({areFriends: false})
   },
 
   sendFriendRequest: function() {
-    ApiUtil.sendFriendRequest(this.props.params.user_id)
+    ApiUtil.sendFriendRequest(this.props.currentProfileId)
     this.setState({areFriends: true})
   },
 

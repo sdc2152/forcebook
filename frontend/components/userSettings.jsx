@@ -20,23 +20,20 @@ var UserSettings = React.createClass({
   },
 
   _onChange: function() {
-    this.setState({user: UserStore.find(this.props.params.user_id),
-    areFriends: FriendStore.areFriends(this.props.params.user_id)})
+    this.setState({areFriends: FriendStore.areFriends(this.props.params.user_id)})
   },
 
   componentDidMount: function() {
-    this.listener = UserStore.addListener(this._onChange);
     this.friendListener = FriendStore.addListener(this._onChange);
   },
 
   componentWillReceiveProps: function(newProps){
-    ApiUtil.fetchAllFriends(this.props.params.user_id);
+    ApiUtil.fetchAllFriends(window.currentUserId);
     this.setState({user: UserStore.find(newProps.params.user_id),
     areFriends: FriendStore.areFriends(this.props.params.user_id) });
   },
 
   componentWillUnmount: function(){
-    this.listener.remove()
     this.friendListener.remove()
   },
 

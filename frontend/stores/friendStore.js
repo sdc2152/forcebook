@@ -15,6 +15,7 @@ FriendStore.__onDispatch = function(payload){
       resetFriends(payload.friends)
       break;
     case FriendConstants.REMOVE_FRIEND:
+      console.log(payload);
       resetFriends(payload.friends)
       break;
   }
@@ -43,13 +44,14 @@ FriendStore.allFriends = function (){
 };
 
 FriendStore.areFriends = function (friendId){
-  var friends = false
+  var rf = false
   _friends.forEach(function(friend, idx){
-    if (friend.id == friendId){
-      friends = true
+    if (friend.id === parseInt(friendId)){
+      rf = true
     }
   })
-  return friends
+  console.log(rf);
+  return rf
 };
 
 addFriend = function(friend) {

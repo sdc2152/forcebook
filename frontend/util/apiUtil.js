@@ -227,10 +227,10 @@ module.exports = {
   sendFriendRequest: function (friendId) {
     $.ajax({
       type: "POST",
-      url: "api/friendships/create",
+      url: "api/friendships",
       data: {friendId: friendId},
       success: function (data) {
-        ApiActions.sendFriendRequest(data.friendship);
+        ApiActions.sendFriendRequest(data.friendRequest);
       }
     })
   },

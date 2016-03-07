@@ -5,10 +5,9 @@ class Api::FriendshipsController < ApplicationController
   end
 
     def create
-
       @friendship = Friendship.new(
-        friend_id: params[:friendId],
-        user_id: current_user.id,
+      friend_id: params[:friendId],
+      user_id: current_user.id,
       )
       if @friendship.save
         render json: {
@@ -18,6 +17,7 @@ class Api::FriendshipsController < ApplicationController
       else
         render json: {}, status: 420
       end
+
     end
 
   def destroy

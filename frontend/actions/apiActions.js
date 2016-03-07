@@ -149,7 +149,7 @@ module.exports = {
     });
   },
 
-  removeFriend: function(friendRequest){
+  sendFriendRequest: function(friendRequest){
     Dispatcher.dispatch({
       actionType: Constants.REQUEST_FRIEND,
       friendRequest: friendRequest

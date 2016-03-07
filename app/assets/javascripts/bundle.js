@@ -31899,10 +31899,10 @@
 	  sendFriendRequest: function (friendId) {
 	    $.ajax({
 	      type: "POST",
-	      url: "api/friendships/create",
+	      url: "api/friendships",
 	      data: { friendId: friendId },
 	      success: function (data) {
-	        ApiActions.sendFriendRequest(data.friendship);
+	        ApiActions.sendFriendRequest(data.friendRequest);
 	      }
 	    });
 	  },
@@ -32075,7 +32075,7 @@
 	    });
 	  },
 	
-	  removeFriend: function (friendRequest) {
+	  sendFriendRequest: function (friendRequest) {
 	    Dispatcher.dispatch({
 	      actionType: Constants.REQUEST_FRIEND,
 	      friendRequest: friendRequest
@@ -34744,23 +34744,20 @@
 	  },
 	
 	  _onChange: function () {
-	    this.setState({ user: UserStore.find(this.props.params.user_id),
-	      areFriends: FriendStore.areFriends(this.props.params.user_id) });
+	    this.setState({ areFriends: FriendStore.areFriends(this.props.params.user_id) });
 	  },
 	
 	  componentDidMount: function () {
-	    this.listener = UserStore.addListener(this._onChange);
 	    this.friendListener = FriendStore.addListener(this._onChange);
 	  },
 	
 	  componentWillReceiveProps: function (newProps) {
-	    ApiUtil.fetchAllFriends(this.props.params.user_id);
+	    ApiUtil.fetchAllFriends(window.currentUserId);
 	    this.setState({ user: UserStore.find(newProps.params.user_id),
 	      areFriends: FriendStore.areFriends(this.props.params.user_id) });
 	  },
 	
 	  componentWillUnmount: function () {
-	    this.listener.remove();
 	    this.friendListener.remove();
 	  },
 	
@@ -35016,6 +35013,7 @@
 	      resetFriends(payload.friends);
 	      break;
 	    case FriendConstants.REMOVE_FRIEND:
+	      console.log(payload);
 	      resetFriends(payload.friends);
 	      break;
 	  }
@@ -35041,13 +35039,14 @@
 	};
 	
 	FriendStore.areFriends = function (friendId) {
-	  var friends = false;
+	  var rf = false;
 	  _friends.forEach(function (friend, idx) {
-	    if (friend.id == friendId) {
-	      friends = true;
+	    if (friend.id === parseInt(friendId)) {
+	      rf = true;
 	    }
 	  });
-	  return friends;
+	  console.log(rf);
+	  return rf;
 	};
 	
 	addFriend = function (friend) {
@@ -35080,7 +35079,8 @@
 	  FRIEND_RECEIVED: "FRIEND_RECEIVED",
 	  FRIENDS_RECEIVED: "FRIENDS_RECEIVED",
 	  FRIEND_CREATED: "FRIEND_CREATED",
-	  FRIEND_DELETED: "FRIEND_DELETED"
+	  FRIEND_DELETED: "FRIEND_DELETED",
+	  REMOVE_FRIEND: "REMOVE_FRIEND"
 	};
 
 /***/ },
@@ -35157,18 +35157,34 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
-	var PropTypes = React.PropTypes;
+	var ApiUtil = __webpack_require__(241);
+	var FriendStore = __webpack_require__(274);
 	
 	var FriendButton = React.createClass({
-	  displayName: "FriendButton",
+	  displayName: 'FriendButton',
+	
+	
+	  getInitialState: function () {
+	    return { areFriends: FriendStore.areFriends(this.props.currentProfileId) };
+	  },
+	
+	  _onChange: function () {
+	    this.setState({ areFriends: FriendStore.areFriends(this.props.currentProfileId) });
+	  },
+	  componentDidMount: function () {
+	    this.friendListener = FriendStore.addListener(this._onChange);
+	  },
+	  componentWillUnmount: function () {
+	    this.friendListener.remove();
+	  },
 	
 	  removeFriend: function () {
-	    ApiUtil.removeFriend(this.props.params.user_id);
+	    ApiUtil.removeFriend(this.props.currentProfileId);
 	    this.setState({ areFriends: false });
 	  },
 	
 	  sendFriendRequest: function () {
-	    ApiUtil.sendFriendRequest(this.props.params.user_id);
+	    ApiUtil.sendFriendRequest(this.props.currentProfileId);
 	    this.setState({ areFriends: true });
 	  },
 	
@@ -35177,24 +35193,24 @@
 	      return null;
 	    } else if (this.state.areFriends) {
 	      return React.createElement(
-	        "a",
-	        { className: "togglefriend", title: "togglefriend" },
-	        React.createElement("span", { className: "rightbotomimagewrap" }),
+	        'a',
+	        { className: 'togglefriend', title: 'togglefriend' },
+	        React.createElement('span', { className: 'rightbotomimagewrap' }),
 	        React.createElement(
-	          "div",
+	          'div',
 	          { onClick: this.removeFriend },
-	          "Unfriend"
+	          'Unfriend'
 	        )
 	      );
 	    } else {
 	      return React.createElement(
-	        "a",
-	        { className: "togglefriend", title: "togglefriend" },
-	        React.createElement("span", { className: "rightbotomimagewrap" }),
+	        'a',
+	        { className: 'togglefriend', title: 'togglefriend' },
+	        React.createElement('span', { className: 'rightbotomimagewrap' }),
 	        React.createElement(
-	          "div",
+	          'div',
 	          { onClick: this.sendFriendRequest },
-	          "Add Friend"
+	          'Add Friend'
 	        )
 	      );
 	    }
@@ -35202,7 +35218,7 @@
 	
 	  render: function () {
 	    return React.createElement(
-	      "div",
+	      'div',
 	      null,
 	      this.friendButton()
 	    );
