@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "postinstall": "./node_modules/.bin/webpack"
   },
   "keywords": [],
   "author": "",
@@ -25,5 +25,9 @@
     "react-search-bar": "^1.1.4",
     "react-textarea-autosize": "^3.3.0",
     "webpack": "^1.12.14"
+  },
+  "engines": {
+    "node": "5.4.1",
+    "npm": "3.5.3"
   }
 }
