@@ -87,6 +87,53 @@ module.exports = {
       comment: comment
     });
   },
+
+
+
+  receiveAllLikes: function (data) {
+    Dispatcher.dispatch({
+      actionType: Constants.LIKE_UPDATED,
+      data: data
+    });
+  },
+
+  deleteLike: function (data) {
+
+    Dispatcher.dispatch({
+      actionType: Constants.LIKE_DELETED,
+      data: data
+    });
+  },
+
+  createLike: function (data) {
+    Dispatcher.dispatch({
+      actionType: Constants.LIKE_UPDATED,
+      data: data
+    });
+  },
+
+
+  deleteTimelineLike: function (data) {
+
+    Dispatcher.dispatch({
+      actionType: Constants.TIMELINE_LIKE_DELETED,
+      data: data
+    });
+  },
+
+  createTimelineLike: function (data) {
+    Dispatcher.dispatch({
+      actionType: Constants.TIMELINE_LIKE_UPDATED,
+      data: data
+    });
+  },
+
+
+
+
+
+
+
   receiveAllPhotos: function (photos) {
     Dispatcher.dispatch({
       actionType: Constants.PHOTOS_RECEIVED,
@@ -126,6 +173,24 @@ module.exports = {
 
 
 
+  receiveAllRequests: function (requests) {
+    Dispatcher.dispatch({
+      actionType: Constants.REQUESTS_RECEIVED,
+      requests: requests
+    });
+  },
+
+  approveFriendRequest: function (data) {
+    Dispatcher.dispatch({
+      actionType: Constants.FRIENDSHIP_APPROVED,
+      requests: data.requests,
+      friends: data.friends
+    });
+  },
+
+
+
+
   receiveAllFriends: function (friends) {
     Dispatcher.dispatch({
       actionType: Constants.FRIENDS_RECEIVED,
@@ -142,10 +207,10 @@ module.exports = {
   },
 
 
-  removeFriend: function(friends){
+  removeFriend: function(friendship){
     Dispatcher.dispatch({
       actionType: Constants.REMOVE_FRIEND,
-      friends: friends
+      friendship: friendship
     });
   },
 

@@ -7,7 +7,7 @@
   <div id="navbar">
     <table class="tablewrapper">
     <tr>
-      <td class="row1">Email or Phone</td>
+      <td class="row1">Email</td>
       <td class="row1">Password</td>
     </tr>
     <tr>
@@ -32,6 +32,18 @@
           <input type="submit" value="Log In" >
         </td>
       </form>
+
+      <form  action="<%= session_url %>" method="post">
+        <input type="hidden"
+        name="authenticity_token"
+        id=""
+        value="<%= form_authenticity_token %>">
+        <input type="hidden" name="session[email]" value="luke.skywalker@gmail.com">
+        <input type="hidden" name="session[password]" value="ls123456">
+        <div class="sign_button">
+          <input class="demouser" type="submit" value="Sign In as Luke Skywalker!">
+        </div>
+      </form>
     </tr>
 
 
@@ -43,7 +55,7 @@
       <td class="row2 h">Forgot your password?</td>
   </table>
 
-    <h1 class="logowrapper">forcebook</h1>
+    <h1 class="logowrapper">Forcebook</h1>
 
   </div>
 </div>
@@ -53,8 +65,8 @@
     <div id="leftbodsignin">
 
       <div class="connect bolder">
-        Connect with friends and the
-        world around you on Facebook.</div>
+        Connect with Jedi and the
+        universe around you on Forcebook.</div>
 
       <div class="leftbar">
         <img src="https://fbcdn-dragon-a.akamaihd.net/hphotos-ak-xap1/t39.2365-6/851565_602269956474188_918638970_n.png" alt="" class="iconwrap fb1"/>
@@ -172,12 +184,7 @@
     <div class="formbox">
       <button type="submit" class="signbut bolder">Sign Up</button>
     </div>
-    <div class="formbox">
-      <div class="create">
-        <div class="link h">Create a Page</div>
-        for a celebrity, band or business.
-      </div>
-    </div>
+
     </div>
    </div>
   </div>

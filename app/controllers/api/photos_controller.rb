@@ -5,8 +5,7 @@ class Api::PhotosController < ApplicationController
   end
 
   def index
-    @photos = Photo.all
-    render :index
+    @photos = Photo.includes(:author).where(user_id: params[:user_id]).order(created_at: :desc)
   end
 
   def create
@@ -31,8 +30,13 @@ class Api::PhotosController < ApplicationController
 
   def destroy
     @photo = Photo.find(params[:id])
-    @photo.destroy
-    render :show
+    if @photo.destroy
+      render json: {
+        photo: @photo
+      }
+    else
+      render json: {}, status: 420
+    end
   end
 
   private

@@ -5,8 +5,16 @@ var PhotoShow = require('./photos/photoShow');
 
 var ProfileLeft = React.createClass({
 
-  onClick: function () {
+  onClick: function (event) {
+    event.preventDefault()
+
     hashHistory.push('users/' +  window.currentUserId)
+  },
+
+  redirectAbout: function () {
+    event.preventDefault()
+
+    hashHistory.push('users/' +  window.currentUserId + '/about')
   },
   render: function() {
     return (
@@ -21,7 +29,7 @@ var ProfileLeft = React.createClass({
                 </div>
 
                 <div>
-                  <a title={this.props.user.full_name}>
+                  <a title={this.props.user.full_name} className="click">
                     <span className="leftnavimagewrap"></span>
                     <div onClick={this.onClick}>{this.props.user.full_name}</div>
                   </a>
@@ -32,12 +40,12 @@ var ProfileLeft = React.createClass({
             <li>
               <div className="proflistitemcontentwrapper">
                 <div className="leftcontentwrapper">
-                  <a className="edit" />
+                  <a className="edit click" />
                 </div>
 
-                <a title="editprof">
+                <a title="editprof click">
                   <span className="leftnavimagewrap"></span>
-                  <div onClick={this.onClick}>edit profile</div>
+                  <div className="click" onClick={this.redirectAbout}>edit profile</div>
                 </a>
               </div>
             </li>
@@ -56,7 +64,7 @@ var ProfileLeft = React.createClass({
                       <a className="newsfeed" />
                     </div>
 
-                    <a title="newsfeed">
+                    <a title="newsfeed noclick">
                       <span className="leftnavimagewrap"></span>
                       <div>NewsFeed</div>
                     </a>
@@ -68,7 +76,7 @@ var ProfileLeft = React.createClass({
                     <div className="leftcontentwrapper">
                       <a className="messages" />
                     </div>
-                    <a title="messages">
+                    <a title="messages noclick">
                       <span className="leftnavimagewrap"></span>
                       <div>Messages</div>
                     </a>
@@ -80,7 +88,7 @@ var ProfileLeft = React.createClass({
                     <div className="leftcontentwrapper">
                       <a className="events" />
                     </div>
-                    <a title="events">
+                    <a title="events noclick">
                       <span className="leftnavimagewrap"></span>
                       <div>Events</div>
                     </a>
@@ -92,7 +100,7 @@ var ProfileLeft = React.createClass({
                     <div className="leftcontentwrapper">
                       <a className="saved" />
                     </div>
-                    <a title="saved">
+                    <a title="saved noclick">
                       <span className="leftnavimagewrap"></span>
                       <div>Saved</div>
                     </a>
@@ -102,9 +110,9 @@ var ProfileLeft = React.createClass({
                 <li>
                   <div className="proflistitemcontentwrapper">
                     <div className="leftcontentwrapper">
-                      <a className="salegroups" />
+                      <a className="salegroups noclick" />
                     </div>
-                    <a title="sale">
+                    <a title="sale noclick">
                       <span className="leftnavimagewrap"></span>
                       <div>Sale Groups</div>
                     </a>
@@ -121,9 +129,9 @@ var ProfileLeft = React.createClass({
                 <li>
                   <div className="proflistitemcontentwrapper">
                     <div className="leftcontentwrapper">
-                      <a className="likepages" />
+                      <a className="likepages noclick" />
                     </div>
-                    <a title="likepages">
+                    <a title="likepages noclick">
                       <span className="leftnavimagewrap"></span>
                       <div>Like Pages</div>
                     </a>
@@ -133,9 +141,9 @@ var ProfileLeft = React.createClass({
                 <li>
                   <div className="proflistitemcontentwrapper">
                     <div className="leftcontentwrapper">
-                      <a className="pagesfeed" />
+                      <a className="pagesfeed noclick" />
                     </div>
-                    <a title="pagefeed">
+                    <a title="pagefeed noclick">
                       <span className="leftnavimagewrap"></span>
                       <div>Pages Feed</div>
                     </a>
@@ -145,9 +153,9 @@ var ProfileLeft = React.createClass({
                 <li>
                   <div className="proflistitemcontentwrapper">
                     <div className="leftcontentwrapper">
-                      <a className="createpage" />
+                      <a className="createpage noclick" />
                     </div>
-                    <a title="createpage">
+                    <a title="createpage noclick">
                       <span className="leftnavimagewrap"></span>
                       <div>Create Page</div>
                     </a>
@@ -157,9 +165,9 @@ var ProfileLeft = React.createClass({
                 <li>
                   <div className="proflistitemcontentwrapper">
                     <div className="leftcontentwrapper">
-                      <a className="createad" />
+                      <a className="createad noclick" />
                     </div>
-                    <a title="createad">
+                    <a title="createad noclick">
                       <span className="leftnavimagewrap"></span>
                       <div>Create Ad</div>
                     </a>
@@ -176,9 +184,9 @@ var ProfileLeft = React.createClass({
                 <li>
                   <div className="proflistitemcontentwrapper">
                     <div className="leftcontentwrapper">
-                      <a className="creategroup" />
+                      <a className="creategroup noclick" />
                     </div>
-                    <a title="creategroup">
+                    <a title="creategroup noclick">
                       <span className="leftnavimagewrap"></span>
                       <div>Create Group</div>
                     </a>
@@ -188,9 +196,9 @@ var ProfileLeft = React.createClass({
                 <li>
                   <div className="proflistitemcontentwrapper">
                     <div className="leftcontentwrapper">
-                      <a className="newgroups" />
+                      <a className="newgroups noclick" />
                     </div>
-                    <a title="newgroup">
+                    <a title="newgroup noclick">
                       <span className="leftnavimagewrap"></span>
                       <div>New Groups</div>
                     </a>
@@ -207,9 +215,9 @@ var ProfileLeft = React.createClass({
                 <li>
                   <div className="proflistitemcontentwrapper">
                     <div className="leftcontentwrapper">
-                      <a className="family" />
+                      <a className="family noclick" />
                     </div>
-                    <a title="closelist">
+                    <a title="closelist noclick">
                       <span className="leftnavimagewrap"></span>
                       <div>Family</div>
                     </a>
@@ -219,9 +227,9 @@ var ProfileLeft = React.createClass({
                 <li>
                   <div className="proflistitemcontentwrapper">
                     <div className="leftcontentwrapper">
-                      <a className="closefriends" />
+                      <a className="closefriends noclick" />
                     </div>
-                    <a title="closelist">
+                    <a title="closelist noclick">
                       <span className="leftnavimagewrap"></span>
                       <div>Close Friends</div>
                     </a>
@@ -238,9 +246,9 @@ var ProfileLeft = React.createClass({
                 <li>
                   <div className="proflistitemcontentwrapper">
                     <div className="leftcontentwrapper">
-                      <a className="pokes" />
+                      <a className="pokes noclick" />
                     </div>
-                    <a title="pokes">
+                    <a title="pokes noclick">
                       <span className="leftnavimagewrap"></span>
                       <div>Pokes</div>
                     </a>
@@ -251,9 +259,9 @@ var ProfileLeft = React.createClass({
                 <li>
                   <div className="proflistitemcontentwrapper">
                     <div className="leftcontentwrapper">
-                      <a className="photos" />
+                      <a className="photos noclick" />
                     </div>
-                    <a title="photos">
+                    <a title="photos noclick">
                       <span className="leftnavimagewrap"></span>
                       <div>Photos</div>
                     </a>
@@ -264,9 +272,9 @@ var ProfileLeft = React.createClass({
                 <li>
                   <div className="proflistitemcontentwrapper">
                     <div className="leftcontentwrapper">
-                      <a className="gamesfeed" />
+                      <a className="gamesfeed noclick" />
                     </div>
-                    <a title="gamefeed">
+                    <a title="gamefeed noclick">
                       <span className="leftnavimagewrap"></span>
                       <div>Games Feed</div>
                     </a>
@@ -284,10 +292,10 @@ var ProfileLeft = React.createClass({
                 <li>
                   <div className="proflistitemcontentwrapper">
                     <div className="leftcontentwrapper">
-                      <a className="pagesandpublic" />
+                      <a className="pagesandpublic noclick" />
 
                     </div>
-                    <a title="pagepublic">
+                    <a title="pagepublic noclick">
                       <span className="leftnavimagewrap"></span>
                       <div>Pages and Public ...</div>
                     </a>
@@ -305,9 +313,9 @@ var ProfileLeft = React.createClass({
               <li>
                 <div className="proflistitemcontentwrapper">
                   <div className="leftcontentwrapper">
-                    <a className="createevent" />
+                    <a className="createevent noclick" />
                   </div>
-                  <a title="createevent">
+                  <a title="createevent noclick">
                     <span className="leftnavimagewrap"></span>
                     <div>Create Event</div>
                   </a>

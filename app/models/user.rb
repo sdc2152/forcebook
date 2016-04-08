@@ -15,6 +15,12 @@
 #  gender            :string(1)        not null
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
+#  prof_url          :string           default("/pics/default_profile.png"), not null
+#  banner_url        :string           default("/pics/default_banner.png"), not null
+#  lives             :string
+#  education         :string
+#  work              :string
+#  about             :text
 #
 
 class User < ActiveRecord::Base
@@ -75,6 +81,22 @@ class User < ActiveRecord::Base
       friendship.user_id == self.id ? friendship.receiving : friendship.giving
     end
     all_friends
+  end
+
+  def received_requests
+    receiving_friendships = self.receiving_friendships.includes(giving: :photos).where(confirmed: false, denied: false).to_a
+    incoming_requests = receiving_friendships.map do |request|
+      request.giving
+    end
+    incoming_requests
+  end
+
+  def made_requests
+    requesting_friendships = self.requesting_friendships.includes(receiving: :photos).where(confirmed: false).to_a
+    outgoing_requests = requesting_friendships.map do |friendship|
+      friendship.user_id == self.id ? friendship.receiving : friendship.giving
+    end
+    outgoing_requests
   end
 
   def name

@@ -5,42 +5,79 @@ var FriendStore = new Store(AppDispatcher);
 
 var _friends = [];
 var _friend = [];
-var _request = [];
-var _request = [];
+
+var _requests = [];
 
 
 FriendStore.__onDispatch = function(payload){
   switch(payload.actionType) {
+    case FriendConstants.REQUESTS_RECEIVED:
+      resetRequests(payload.requests)
+      FriendStore.__emitChange()
+      break;
     case FriendConstants.FRIENDS_RECEIVED:
       resetFriends(payload.friends)
+      FriendStore.__emitChange()
       break;
     case FriendConstants.REMOVE_FRIEND:
-      console.log(payload);
+      removeFriend(payload.friendship)
+      removeRequest(payload.friendship)
+      FriendStore.__emitChange()
+      break;
+    case FriendConstants.FRIENDSHIP_APPROVED:
       resetFriends(payload.friends)
+      resetRequests(payload.requests)
+      FriendStore.__emitChange()
       break;
   }
 };
 
 resetFriends = function (friends) {
   _friends = friends
-  FriendStore.__emitChange()
 };
 
 removeFriend = function(friend) {
   var friends = [];
   _friends.forEach(function(el, idx){
-    if (el.id !== friend.id){
+    if (el.id !== friend.friendship.user_id && el.id !== friend.friendship.user_id){
       friends.push(el)
     }
   })
   resetFriends(friends)
 };
 
+removeRequest = function(friend) {
+  var requests = [];
+  _requests.forEach(function(el, idx){
+    if (el.user.id !== friend.friendship.friend_id){
+      requests.push(el)
+    }
+  })
+  resetRequests(requests)
+};
 
+addFriend = function(friend) {
+  _friends = [friend].concat(_friends)
+};
+
+
+resetRequests = function(requests) {
+  _requests = requests
+};
+
+
+
+FriendStore.allRequests = function (){
+  return _requests
+};
 
 
 FriendStore.allFriends = function (){
   return _friends
+};
+
+FriendStore.topNine = function (){
+  return _friends.slice(0,9)
 };
 
 FriendStore.areFriends = function (friendId){
@@ -50,20 +87,8 @@ FriendStore.areFriends = function (friendId){
       rf = true
     }
   })
-  console.log(rf);
   return rf
 };
-
-addFriend = function(friend) {
-  _friends = [friend].concat(_friends)
-  FriendStore.__emitChange()
-};
-
-resetFriends = function (friends) {
-  _friends = friends
-  FriendStore.__emitChange()
-};
-
 
 FriendStore.find = function (friendId) {
   var foundFriend;
@@ -74,6 +99,8 @@ FriendStore.find = function (friendId) {
   })
   return foundFriend
 }
+
+
 
 
 module.exports = FriendStore;

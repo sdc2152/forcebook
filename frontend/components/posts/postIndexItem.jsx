@@ -3,6 +3,10 @@ var PostStore = require('../../stores/postStore');
 var ApiUtil = require('../../util/apiUtil');
 var CommentIndex = require('../comments/commentIndex');
 var PhotoShow = require('../photos/photoShow');
+var LikeButton = require('../likes/likeButton');
+var ShareModal = require('../shareModal');
+var DeletePostModal = require('../deletePostModal');
+var hashHistory = require('react-router').hashHistory;
 
 var PostIndexItem = React.createClass({
   getInitialState: function(){
@@ -17,30 +21,24 @@ var PostIndexItem = React.createClass({
     )
   },
 
+  compomentWillRecieveProps: function (newProps) {
+    clearInterval(this.interval)
+  },
+
   compomentWillUnmount: function () {
-    this.clearInterval(this.interval)
+    clearInterval(this.interval)
   },
 
-  sharePost: function(event) {
-    event.preventDefault();
-
-    var body = this.props.post.body
-    var currentUser = window.currentUserId
-    ApiUtil.sharePost({body: body, author_id: currentUser})
-  },
-
-  deletePost: function(event) {
-    event.preventDefault();
-
-    var post = this.props.post
-    ApiUtil.deletePost(post)
+  _onClick: function(event) {
+    event.preventDefault()
+    hashHistory.push("users/" + this.props.post.author_id)
   },
 
   render: function() {
     return (
       <div>
-        {this.props.user.id === this.props.post.author_id ? <a onClick={this.deletePost}>delete</a> : null }
         <li className="postandcommentwrapper">
+          {this.props.user.id === window.currentUserId ? <DeletePostModal post={this.props.post}/> : null}
           <div className="indpostwrapper">
             <div className="postwrapper">
 
@@ -51,7 +49,7 @@ var PostIndexItem = React.createClass({
                     <PhotoShow url={this.props.user.prof_url} type="profile_pic" />
                   </div>
 
-                  <div className="postusername">
+                  <div onClick={this._onClick} className="postusername" >
                     {this.props.user.first_name} {this.props.user.last_name}
                   </div>
 
@@ -71,16 +69,15 @@ var PostIndexItem = React.createClass({
               <div className="commentformwrapper">
 
                 <div clasName="postcommentform">
-                  <a>Like</a>
-                  <a>Comment</a>
-                  <a onClick={this.sharePost}>Share</a>
+                  <LikeButton likeType="post" post={this.props.post} />
+                  <ShareModal post={this.props.post} current={this.props.currentPage}/>
                 </div>
 
               </div>
 
             </div>
           </div>
-          <CommentIndex post={this.props.post} comments={this.props.post.comments}/>
+          <CommentIndex key={this.props.key} post={this.props.post} comments={this.props.post.comments}/>
         </li>
         <div className="breakdiv"></div>
       </div>

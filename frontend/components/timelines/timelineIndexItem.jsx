@@ -3,6 +3,10 @@ var PostStore = require('../../stores/postStore');
 var ApiUtil = require('../../util/apiUtil');
 var CommentIndex = require('../comments/commentIndex');
 var PhotoShow = require('../photos/photoShow');
+var LikeButtonTimeline = require('../likes/likeButtonTimeline');
+var ShareModal = require('../shareModal');
+var DeletePostModal = require('../deletePostModal');
+var hashHistory = require('react-router').hashHistory;
 
 var PostIndexItem = React.createClass({
   getInitialState: function(){
@@ -18,28 +22,18 @@ var PostIndexItem = React.createClass({
   },
 
   compomentWillUnmount: function () {
-    this.clearInterval(this.interval)
+    clearInterval(this.interval)
   },
 
-  sharePost: function(event) {
-    event.preventDefault();
-
-    var body = this.props.post.body
-    var currentUser = window.currentUserId
-    ApiUtil.sharePost({body: body, author_id: currentUser})
-  },
-
-  deletePost: function(event) {
-    event.preventDefault();
-
-    var post = this.props.post
-    ApiUtil.deletePost(post)
+  _onClick: function(event) {
+    event.preventDefault()
+    hashHistory.push("users/" + this.props.post.author_id)
   },
 
   render: function() {
     return (
       <div>
-        <a onClick={this.deletePost}>delete</a>
+        {this.props.user.id === window.currentUserId ? <DeletePostModal post={this.props.post}/> : null}
         <li className="postandcommentwrapper">
           <div className="indpostwrapper">
             <div className="postwrapper">
@@ -51,7 +45,7 @@ var PostIndexItem = React.createClass({
                     <PhotoShow url={this.props.user.prof_url} type="profile_pic"/>
                   </div>
 
-                  <div className="postusername">
+                  <div onClick={this._onClick} className="postusername">
                     {this.props.user.first_name} {this.props.user.last_name}
                   </div>
 
@@ -70,10 +64,9 @@ var PostIndexItem = React.createClass({
 
               <div className="commentformwrapper">
 
-                <div clasName="postcommentform">
-                  <a>Like</a>
-                  <a>Comment</a>
-                  <a onClick={this.sharePost}>Share</a>
+                <div className="postcommentform">
+                  <LikeButtonTimeline className="inline" post={this.props.post}/>
+                  <ShareModal post={this.props.post} current={window.currentUserId}/>
                 </div>
 
               </div>

@@ -25,7 +25,7 @@ UserStore.changeDisplayedUser = function(newUserId){
 };
 
 UserStore.displayedUser = function() {
-  return _displayedUser
+  return _user
 };
 
 UserStore.all = function (){
@@ -37,18 +37,9 @@ var resetUsers = function (users) {
   UserStore.__emitChange();
 };
 
-var find = function (userId) {
-  var foundUser;
-  _users.forEach(function (user) {
-    if (user.id == userId){
-      foundUser = user
-    }
-  })
-  return foundUser
-};
-
 var resetUser = function (user) {
   _user = user;
+  UserStore.__emitChange();
 };
 
 UserStore.resetCurrentUser = function (userNow) {

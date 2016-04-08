@@ -61,12 +61,20 @@ table {
 	border-spacing: 0;
 }
 
-
+.inline {
+	display: inline-block;
+}
 
 body {
   margin: 0;
   font-family: 'Lucida Grande', tahoma,verdana,arial,sans-serif;
   line-height: 1.28;
+}
+
+.demouser{
+	position: absolute;
+	margin-left: 434px;
+	margin-top: 31px;
 }
 
 #navwrapper {
@@ -96,6 +104,14 @@ body {
 
 #photoshow {
 	background-size: cover;
+	cursor: pointer;
+	background-position-x: 50%;
+	background-position-y: 50%;
+}
+
+.enlargephoto {
+	height: 500px;
+	width: 500px;
 }
 
 h1 {
@@ -125,6 +141,24 @@ h1 {
   font-weight:bold;
   text-align:center;
   color:#fff;
+}
+
+.clicktext {
+	cursor: pointer;
+}
+
+.delete {
+	margin-right: 4px;
+	margin-top: 4px;
+	float: right;
+	background-image: url('/pics/delete.png');
+	background-size: cover;
+	height: 18px;
+	width: 18px;
+	border-radius: 2px;
+	display: inline-block;
+	z-index: 1;
+	background-color: transparent;
 }
 
 .tablewrapper {
@@ -339,22 +373,22 @@ h1 {
 }
 
 .signbut {
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  color:#fff;
-  min-width: 194px;
-  padding: 7px 20px;
-  text-align: center;
-  -webkit-border-radius: 5px;
-  background: -webkit-linear-gradient(#67ae55, #578843);
-  -webkit-box-shadow: inset 0 1px 1px #a4e388;
-  border: 1px solid;
-border-color: #3b6e22 #3b6e22 #2c5115;
-  margin-top: 10px;
-margin-bottom: 10px;
-  text-shadow: 0 1px 2px rgba(0,0,0,.5);
-  cursor:pointer;
+	font-size: 19px;
+	font-weight: 700;
+	letter-spacing: 1px;
+	color:#fff;
+	min-width: 194px;
+	padding: 7px 20px;
+	text-align: center;
+	-webkit-border-radius: 5px;
+	background: -webkit-linear-gradient(#67ae55, #578843);
+	-webkit-box-shadow: inset 0 1px 1px #a4e388;
+	border: 1px solid;
+	border-color: #3b6e22 #3b6e22 #2c5115;
+	margin-top: 10px;
+	margin-bottom: 10px;
+	text-shadow: 0 1px 2px rgba(0,0,0,.5);
+	cursor:pointer;
 }
 
 .signbut:hover {
@@ -480,7 +514,7 @@ body {
   z-index: 1;
 }
 .flogoimage {
-  background-image: url(/pics/ntHIqvR4OcE.png);
+  background-image: url('/pics/ntHIqvR4OcE.png');
   background-repeat: no-repeat;
   background-size: auto;
   background-position: -9px -39px;
@@ -570,7 +604,7 @@ body {
   right: 0;
   top: -1px;
   vertical-align: middle;
-  background-image: url(/pics/2g-WT7_cU4E.png);
+  background-image: url('/pics/2g-WT7_cU4E.png');
   background-repeat: no-repeat;
   background-size: auto;
   background-position: -46px -211px;
@@ -718,26 +752,81 @@ body {
 }
 
 
+/*************** REQUEST INDEX*****************/
+
+.requestindex {
+	max-height: 376px;
+	width: 400px;
+	overflow: scroll;
+	border-radius: 5px;
+	border: 1px solid #e5e5e5;
+	box-shadow: 2px 3px 8px #888888;
+	background-color: #fff;
+}
 
 
+.requestitemwrapper{
+	height: 40px;
+	padding-bottom: 5px;
+	border: 1px solid #e5e5e5;
+	box-shadow: 2px 3px 8px #888888;
+  background-color: #fff;
+}
 
+#friendreq{
+	width: 110px;
+}
 
+#requestname {
+	text-decoration: underline;
+	font-size: 12px;
+	font-weight: bold;
+	color: #3b5998;
+	cursor: pointer;
+}
 
-
-
+.requestbutton{
+	float: right;
+	background-image: url("/pics/wL6VQj7Ab77.png");
+	background-position: 0 -335px;
+	font-size: 12px;
+	line-height: 22px;
+	padding: 0 16px;
+	vertical-align: baseline;
+	font-family: helvetica, arial, sans-serif;
+	background-color: #4e69a2;
+	border-color: #435a8b #3c5488 #334c83;
+	color: #fff;
+	text-shadow: 0 -1px 0 rgba(0, 0, 0, .2);
+	background-repeat: repeat-x;
+	border: 1px solid;
+	border-radius: 2px;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, .05);
+	box-sizing: content-box;
+	-webkit-font-smoothing: antialiased;
+	font-weight: bold;
+	position: relative;
+	text-align: center;
+	cursor: pointer;
+	display: inline-block;
+	text-decoration: none;
+	white-space: nowrap;
+}
 
 /*************** MAIN BODY*****************/
 
 
 
 #userprofwrapper {
-  padding-top: 3%;
-  width: 976px;
-  padding-right: 205px;
-  margin: 0 auto;
-  position: relative;
-  zoom: 1;
-  line-height: 1.34;
+	position: absolute;
+	padding-left: 135px;
+	margin-right: 100%;
+	padding-top: 3%;
+	width: 976px;
+	padding-right: 205px;
+	margin: 0 auto;
+	zoom: 1;
+	line-height: 1.34;
 }
 
 #usercontentwrapper{
@@ -819,7 +908,7 @@ body {
 
 .leftcontentwrapper a {
   vertical-align: middle;
-	background-image: url(/pics/index_buttons.png);
+	background-image: url('/pics/index_buttons.png');
   background-size: auto;
   background-repeat: no-repeat;
   display: inline-block;
@@ -846,7 +935,7 @@ body {
   width: 16px;
 }
 .leftcontentwrapper .events {
-	background-image: url(/pics/other_index_image.png);
+	background-image: url('/pics/other_index_image.png');
   background-position: -17px -209px;
   height: 16px;
   width: 16px;
@@ -911,7 +1000,7 @@ body {
   height: 16px;
   width: 16px;
 }
-.leftcontentwrapper .photos {
+.leftcontentwrapper .s {
 	background-position: 0 -471px;
   height: 16px;
   width: 16px;
@@ -981,12 +1070,19 @@ body {
   border-radius: 2px;
   height: 24px;
   line-height: 24px;
-  cursor: pointer;
   zoom: 1;
   font-size: 12px;
   color: #333;
   display: block;
   min-height: 17px;
+}
+
+.click {
+	cursor: pointer;
+}
+
+.noclick {
+	cursor: default;
 }
 
 .leftnavimagewrap {
@@ -1132,15 +1228,66 @@ body {
 
 /*************** PostIndex *****************/
 
+.userinfocont {
+	margin-top: 20px;
+}
+
 .postindexwrapper {
   min-height: 100px;
 }
 
+.photoindexlabel{
+	cursor: pointer;
+	padding-bottom: 10px;
+	padding-top: 10px;
+	margin-left: 30px;
+}
 
+.albumphoto{
+	display: inline-block;
+	z-index: 1;
+	background-color: #fff;
+	border: 4px solid #fff;
+	border-radius: 2px;
+	height: 92px;
+	width: 92px;
+	border-radius: 2px;
+}
 
+.medalbumphoto{
+	display: inline-block;
+	z-index: 1;
+	background-color: #fff;
+	border: 3px solid #fff;
+	height: 205px;
+	width: 205px;
+	border-radius: 2px;
+}
 
+.postindexphotowrapper{
+	box-shadow: 2px 3px 8px #888888;
+	background-color: #fff;
+	border: 1px solid;
+	border-color: #e5e6e9 #dfe0e4 #d0d1d5;
+	border-radius: 3px;
+	margin-bottom: 20px;
+	height: inherit;;
+	padding: 12px 12px 0;
+	background-color: #fff;
+}
 
+.leftcolpostindex{
+	width: 326px;
+	position: absolute;
+}
 
+.postindexrightmain{
+	border-left: 0;
+	margin-left: 326px;
+	padding-left: 20px;
+	background-color: #e9eaed;
+	min-height: 600px;
+}
 
 
 
@@ -1191,9 +1338,9 @@ body {
 }
 
 
-
-
-
+.postusername {
+	cursor: pointer;
+}
 
 /*************** CommentIndex *****************/
 
@@ -1217,12 +1364,10 @@ body {
 }
 
 .commentexpandwrapper {
+	height: 22px;
 	border-top: 1px solid #e1e2e3;
   margin: 0;
   padding-left: 12px;
-  padding-right: 12px;
-	padding-bottom: 9px;
-  padding-top: 9px;
 }
 
 .commentsandform {
@@ -1233,11 +1378,14 @@ body {
 
 /*************** CommentIndexItem *****************/
 
-
+.comment_pic {
+	display: inline-block;
+	margin-left: 10px;
+}
 
 .indcommentwrapper {
+	display: inline-block;
   background-color: #f6f7f8;
-  margin: 0 12px;
   padding: 4px 0;
   position: relative;
 }
@@ -1345,8 +1493,13 @@ body {
 
 /*************** User Setting *****************/
 
+.clickable {
+	cursor: pointer;
+}
+
 .settingheader {
 	position: relative;
+	margin-bottom: 20px;
 }
 
 .banner_pic {
@@ -1400,6 +1553,8 @@ body {
   border-color: #e5e6e9 #dfe0e4 #d0d1d5;
   border-radius: 3px;
   box-shadow: 2px 3px 8px #888888;
+  max-width: 849px;
+	height: 360px;
 }
 
 .settingsuserinfo {
@@ -1451,11 +1606,11 @@ body {
 
 .togglefriend {
 	position: absolute;
-	z-index: 900000000;
+	z-index: 8;
 	color: #4e5665;
 	text-shadow: 0 1px 0 #fff;
 	background-color: #f6f7f8;
-	background-image: url(/rsrc.php/v2/y1/r/wL6VQj7Ab77.png);
+	background-image: url('/rsrc.php/v2/y1/r/wL6VQj7Ab77.png');
 	background-repeat: repeat-x;
 	border: 1px solid;
 	border-radius: 2px;
@@ -1479,11 +1634,21 @@ body {
 
 /******************* Friend Index *******************/
 
-
-
-.rightmain.friend {
-	margin-left: 0px;
+.friendul{
+	margin-bottom: 10px;
+	background-color: #fff;
+	border: 1px solid;
+	border-color: #e5e6e9 #dfe0e4 #d0d1d5;
+	border-radius: 3px;
+	box-shadow: 2px 3px 8px #888888;
+	padding-top: 15px;
+	list-style-type: none;
+	margin: 0;
+	float: left;
+	min-width: 416px;
+	max-width: 849px;
 }
+
 
 .friends{
 	height: 100px;
@@ -1499,15 +1664,6 @@ body {
 	width: 100px;
 }
 
-.friendul {
-	list-style-type: none;
-	margin: 0;
-	padding-left: 0px;
-	margin-left: -13px;
-	padding-left: 20px;
-	float: left;
-}
-
 .outerwrapperfriend {
 	border: 1px solid #e9eaed;
 	display: inline-block;
@@ -1518,4 +1674,99 @@ body {
 	width: 390px;
 	text-align: -webkit-match-parent;
 	list-style-type: none;
+}
+
+
+/******************* Photo Form *******************/
+.photoadd {
+	border-color: #cccccc #c5c6c8 #b6b7b9;
+	color: #4e5665;
+	text-shadow: 0 1px 0 #fff;
+	background-color: #f6f7f8;
+	border: 1px solid;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, .05);
+	box-sizing: content-box;
+	-webkit-font-smoothing: antialiased;
+	font-weight: bold;
+	text-align: center;
+	vertical-align: middle;
+	background-image: url('/pics/wL6VQj7Ab77.png');
+	background-repeat: repeat-x;
+	border-radius: 3px;
+	background-position: 0 -46px;
+	float: right;
+}
+
+.uploadbutton {
+	margin-top: 5px;
+	margin-bottom: 5px;
+	margin-left: 20px;
+	margin-right: 20px;
+}
+
+
+/******************* Photo Index *******************/
+
+.photoindexheading {
+	background: #f6f7f8;
+  border-bottom: 1px solid #d3d6db;
+  border-radius: 2px 2px 0 0;
+  margin-bottom: 15px;
+  min-height: 66px;
+  padding-top: 16px;
+	padding-right: 20px;
+}
+
+.photowrapper {
+	background: #fff;
+	border: 1px solid #d3d6db;
+	border-radius: 3px;
+	margin-bottom: 31px;
+}
+
+/******************* Photo Slide *******************/
+
+
+.slidedeslay {
+
+}
+
+.slideshowwrapper{
+	position: absolute;
+	z-index: 99;
+}
+
+/******************* About *******************/
+
+#aboutconwrap{
+	border-left: 0;
+	background-color: #e9eaed;
+	min-height: 600px;
+	zoom: 1;
+}
+#aboutfieldcon{
+	word-wrap: break-word;
+	margin-left: 0px;
+}
+
+#aboutpostform{
+	padding-left: 25px;
+	padding-top: 10px;
+	margin-bottom: 10px;
+	background-color: #fff;
+	border: 1px solid;
+	border-color: #e5e6e9 #dfe0e4 #d0d1d5;
+	border-radius: 3px;
+}
+
+
+/******************* Like Button *******************/
+
+
+.likewrapper{
+	display: inline-block;
+}
+
+.inline {
+	display: inline-block;
 }

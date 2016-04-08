@@ -31,10 +31,14 @@ PhotoStore.all = function (){
   return _photos
 };
 
+PhotoStore.topNine = function (){
+  return _photos.slice(0,9)
+};
+
 removePhoto = function(photo) {
   var photos = [];
   _photos.forEach(function(el, idx){
-    if (el.id !== photo.id){
+    if (el.albumphoto.id !== photo.photo.id){
       photos.push(el)
     }
   })

@@ -6,20 +6,18 @@ var CommentForm = React.createClass({
   mixins: [LinkedStateMixin],
 
   getInitialState: function() {
-    return {author_id: window.currentUserId, body: '', post_id: this.props.post.id, reply_id: this.props.reply}
+    return {body: ''}
   },
 
   createComment: function (event) {
     event.preventDefault();
-
-    ApiUtil.createNewComment(this.state)
+    ApiUtil.createNewComment({author_id: window.currentUserId, body: this.state.body, post_id: this.props.post.id, reply_id: this.props.reply})
     this.setState({body: ''});
   },
 
   render: function() {
     return (
       <div className="commentformwrapper">
-
         <form className='commentform' onSubmit={this.createComment}>
           <div className="commenttabs">
           </div>

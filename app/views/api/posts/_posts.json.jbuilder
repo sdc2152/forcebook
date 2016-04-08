@@ -1,4 +1,4 @@
-json.extract! post, :id, :body, :author_id, :created_at
+json.extract! post, :id, :body, :author_id, :created_at, :target_id
 
 
 photo_hash = {
@@ -21,6 +21,8 @@ photo_hash = {
     public_id: "pk8xzpqgmydd68bevnyq"
   }
 }
+
+json.likes post.likes
 
 
 post.author.photos.each do |photo|

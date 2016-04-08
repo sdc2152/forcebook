@@ -51,16 +51,17 @@
 	var IndexRoute = __webpack_require__(159).IndexRoute;
 	
 	var UserProfile = __webpack_require__(216);
-	var Header = __webpack_require__(266);
-	var PostIndex = __webpack_require__(269);
-	var PostIndexItem = __webpack_require__(270);
-	var UserSettings = __webpack_require__(271);
-	var UserPhotos = __webpack_require__(278);
-	var About = __webpack_require__(272);
-	var FriendsIndex = __webpack_require__(273);
+	var Header = __webpack_require__(291);
+	var PostIndex = __webpack_require__(302);
+	var PhotoIndex = __webpack_require__(308);
+	var PostIndexItem = __webpack_require__(303);
+	var UserSettings = __webpack_require__(310);
+	var About = __webpack_require__(311);
+	var FriendsIndex = __webpack_require__(312);
 	
 	var hashHistory = __webpack_require__(159).hashHistory;
 	var ApiUtil = __webpack_require__(241);
+	var Modal = __webpack_require__(249);
 	
 	var App = React.createClass({
 	  displayName: 'App',
@@ -89,16 +90,19 @@
 	    React.createElement(IndexRoute, { component: PostIndex }),
 	    React.createElement(Route, { path: 'timeline', component: PostIndex }),
 	    React.createElement(Route, { path: 'about', component: About }),
-	    React.createElement(Route, { path: 'friends', component: FriendsIndex })
+	    React.createElement(Route, { path: 'friends', component: FriendsIndex }),
+	    React.createElement(Route, { path: 'photos', component: PhotoIndex })
 	  )
 	);
 	
 	document.addEventListener("DOMContentLoaded", function () {
+	  var container = document.getElementById('root');
+	  Modal.setAppElement(container);
 	  ReactDOM.render(React.createElement(
 	    Router,
 	    { history: hashHistory },
 	    routes
-	  ), document.getElementById('root'));
+	  ), container);
 	});
 
 /***/ },
@@ -24735,7 +24739,7 @@
 	var UserStore = __webpack_require__(217);
 	var ApiUtil = __webpack_require__(241);
 	var ProfileLeft = __webpack_require__(243);
-	var Timeline = __webpack_require__(248);
+	var Timeline = __webpack_require__(269);
 	
 	var UserProfile = React.createClass({
 	  displayName: 'UserProfile',
@@ -24818,7 +24822,7 @@
 	};
 	
 	UserStore.displayedUser = function () {
-	  return _displayedUser;
+	  return _user;
 	};
 	
 	UserStore.all = function () {
@@ -24830,18 +24834,9 @@
 	  UserStore.__emitChange();
 	};
 	
-	var find = function (userId) {
-	  var foundUser;
-	  _users.forEach(function (user) {
-	    if (user.id == userId) {
-	      foundUser = user;
-	    }
-	  });
-	  return foundUser;
-	};
-	
 	var resetUser = function (user) {
 	  _user = user;
+	  UserStore.__emitChange();
 	};
 	
 	UserStore.resetCurrentUser = function (userNow) {
@@ -31641,10 +31636,21 @@
 /***/ function(module, exports) {
 
 	module.exports = {
+	  LIKES_RECEIVED: "LIKES_RECEIVED",
+	  LIKE_CREATED: "LIKE_CREATED",
+	  LIKE_DELETED: "LIKE_DELETED",
+	  TIMELINE_LIKE_DELETED: "TIMELINE_LIKE_DELETED",
+	  TIMELINE_LIKE_UPDATED: "TIMELINE_LIKE_UPDATED",
+	
+	  LIKE_UPDATED: "LIKE_UPDATED",
+	
 	  COMMENT_RECEIVED: "COMMENT_RECEIVED",
 	  COMMENTS_RECEIVED: "COMMENTS_RECEIVED",
 	  COMMENT_CREATED: "COMMENT_CREATED",
 	  COMMENT_DELETED: "COMMENT_DELETED",
+	
+	  REQUESTS_RECEIVED: "REQUESTS_RECEIVED",
+	  FRIENDSHIP_APPROVED: "FRIENDSHIP_APPROVED",
 	
 	  FRIEND_RECEIVED: "FRIEND_RECEIVED",
 	  FRIENDS_RECEIVED: "FRIENDS_RECEIVED",
@@ -31714,6 +31720,23 @@
 	    });
 	  },
 	
+	  updateUser: function (userId, params) {
+	    $.ajax({
+	      type: "PATCH",
+	      url: "api/users/" + userId,
+	      data: {
+	        userId: userId,
+	        work: params.work,
+	        education: params.education,
+	        lives: params.lives,
+	        about: params.about
+	      },
+	      success: function (user) {
+	        ApiActions.receiveSingleUser(user);
+	      }
+	    });
+	  },
+	
 	  fetchAllPosts: function (userId) {
 	    $.ajax({
 	      url: "api/users/" + userId + "/posts",
@@ -31742,14 +31765,16 @@
 	      }
 	    });
 	  },
-	  sharePost: function (post) {
+	  sharePost: function (post, userId) {
 	    $.ajax({
 	      method: "POST",
 	      url: "api/posts/",
 	      dataType: "json",
 	      data: { post: post },
 	      success: function (post) {
-	        ApiActions.createNewPost(post);
+	        if (userId == window.currentUserId) {
+	          ApiActions.createNewPost(post);
+	        }
 	      }
 	    });
 	  },
@@ -31803,6 +31828,7 @@
 	      }
 	    });
 	  },
+	
 	  shareComment: function (comment) {
 	    $.ajax({
 	      method: "POST",
@@ -31814,6 +31840,7 @@
 	      }
 	    });
 	  },
+	
 	  deleteComment: function (comment) {
 	    $.ajax({
 	      method: "DELETE",
@@ -31825,6 +31852,64 @@
 	      }
 	    });
 	  },
+	
+	  fetchLikes: function () {
+	    $.ajax({
+	      url: "api/likes",
+	      success: function (data) {
+	        ApiActions.receiveAllLikes(data);
+	      }
+	    });
+	  },
+	
+	  createLike: function (postId) {
+	    $.ajax({
+	      method: "POST",
+	      url: "api/likes",
+	      dataType: "json",
+	      data: { postId: postId },
+	      success: function (data) {
+	        ApiActions.createLike(data);
+	      }
+	    });
+	  },
+	
+	  deleteLike: function (postId, likeId) {
+	    $.ajax({
+	      method: "DELETE",
+	      url: "api/likes/" + likeId,
+	      dataType: "json",
+	      data: { postId: postId },
+	      success: function (data) {
+	        ApiActions.deleteLike(data);
+	      }
+	    });
+	  },
+	
+	  createTimelineLike: function (postId) {
+	    $.ajax({
+	      method: "POST",
+	      url: "api/likes",
+	      dataType: "json",
+	      data: { postId: postId },
+	      success: function (data) {
+	        ApiActions.createTimelineLike(data);
+	      }
+	    });
+	  },
+	
+	  deleteTimelineLike: function (postId, likeId) {
+	    $.ajax({
+	      method: "DELETE",
+	      url: "api/likes/" + likeId,
+	      dataType: "json",
+	      data: { postId: postId },
+	      success: function (data) {
+	        ApiActions.deleteTimelineLike(data);
+	      }
+	    });
+	  },
+	
 	  fetchAllPhotos: function () {
 	    $.ajax({
 	      url: "api/photos",
@@ -31833,6 +31918,16 @@
 	      }
 	    });
 	  },
+	
+	  fetchUserPhotos: function (userId) {
+	    $.ajax({
+	      url: "api/users/" + userId + "/photos",
+	      success: function (photos) {
+	        ApiActions.receiveAllPhotos(photos);
+	      }
+	    });
+	  },
+	
 	  fetchSinglePhoto: function () {
 	    $.ajax({
 	      url: "api/photo/" + id,
@@ -31842,7 +31937,6 @@
 	    });
 	  },
 	  createNewPhoto: function (photo) {
-	    console.log(photo);
 	    $.ajax({
 	      method: "POST",
 	      url: "api/photos/",
@@ -31864,14 +31958,23 @@
 	      }
 	    });
 	  },
-	  deletePhoto: function (photo) {
+	  deletePhoto: function (id) {
 	    $.ajax({
 	      method: "DELETE",
-	      url: "api/photos/" + photo.id,
+	      url: "api/photos/" + id,
 	      dataType: "json",
-	      data: { photo: photo },
+	      data: { id: id },
 	      success: function (photo) {
 	        ApiActions.deletePhoto(photo);
+	      }
+	    });
+	  },
+	
+	  fetchAllRequests: function (userId) {
+	    $.ajax({
+	      url: "api/users/" + userId + "/friend_requests",
+	      success: function (requests) {
+	        ApiActions.receiveAllRequests(requests);
 	      }
 	    });
 	  },
@@ -31891,7 +31994,7 @@
 	      url: "api/friendships/destroy",
 	      data: { friendId: friendId },
 	      success: function (data) {
-	        ApiActions.removeFriend(data.friends);
+	        ApiActions.removeFriend(data);
 	      }
 	    });
 	  },
@@ -31903,6 +32006,17 @@
 	      data: { friendId: friendId },
 	      success: function (data) {
 	        ApiActions.sendFriendRequest(data.friendRequest);
+	      }
+	    });
+	  },
+	
+	  approveFriendRequest: function (userId) {
+	    $.ajax({
+	      type: "PATCH",
+	      url: "api/friendships/update",
+	      data: { userId: userId },
+	      success: function (data) {
+	        ApiActions.approveFriendRequest(data);
 	      }
 	    });
 	  },
@@ -32019,6 +32133,44 @@
 	      comment: comment
 	    });
 	  },
+	
+	  receiveAllLikes: function (data) {
+	    Dispatcher.dispatch({
+	      actionType: Constants.LIKE_UPDATED,
+	      data: data
+	    });
+	  },
+	
+	  deleteLike: function (data) {
+	
+	    Dispatcher.dispatch({
+	      actionType: Constants.LIKE_DELETED,
+	      data: data
+	    });
+	  },
+	
+	  createLike: function (data) {
+	    Dispatcher.dispatch({
+	      actionType: Constants.LIKE_UPDATED,
+	      data: data
+	    });
+	  },
+	
+	  deleteTimelineLike: function (data) {
+	
+	    Dispatcher.dispatch({
+	      actionType: Constants.TIMELINE_LIKE_DELETED,
+	      data: data
+	    });
+	  },
+	
+	  createTimelineLike: function (data) {
+	    Dispatcher.dispatch({
+	      actionType: Constants.TIMELINE_LIKE_UPDATED,
+	      data: data
+	    });
+	  },
+	
 	  receiveAllPhotos: function (photos) {
 	    Dispatcher.dispatch({
 	      actionType: Constants.PHOTOS_RECEIVED,
@@ -32054,6 +32206,21 @@
 	    });
 	  },
 	
+	  receiveAllRequests: function (requests) {
+	    Dispatcher.dispatch({
+	      actionType: Constants.REQUESTS_RECEIVED,
+	      requests: requests
+	    });
+	  },
+	
+	  approveFriendRequest: function (data) {
+	    Dispatcher.dispatch({
+	      actionType: Constants.FRIENDSHIP_APPROVED,
+	      requests: data.requests,
+	      friends: data.friends
+	    });
+	  },
+	
 	  receiveAllFriends: function (friends) {
 	    Dispatcher.dispatch({
 	      actionType: Constants.FRIENDS_RECEIVED,
@@ -32068,10 +32235,10 @@
 	    });
 	  },
 	
-	  removeFriend: function (friends) {
+	  removeFriend: function (friendship) {
 	    Dispatcher.dispatch({
 	      actionType: Constants.REMOVE_FRIEND,
-	      friends: friends
+	      friendship: friendship
 	    });
 	  },
 	
@@ -32096,8 +32263,16 @@
 	  displayName: 'ProfileLeft',
 	
 	
-	  onClick: function () {
+	  onClick: function (event) {
+	    event.preventDefault();
+	
 	    hashHistory.push('users/' + window.currentUserId);
+	  },
+	
+	  redirectAbout: function () {
+	    event.preventDefault();
+	
+	    hashHistory.push('users/' + window.currentUserId + '/about');
 	  },
 	  render: function () {
 	    return React.createElement(
@@ -32125,7 +32300,7 @@
 	                null,
 	                React.createElement(
 	                  'a',
-	                  { title: this.props.user.full_name },
+	                  { title: this.props.user.full_name, className: 'click' },
 	                  React.createElement('span', { className: 'leftnavimagewrap' }),
 	                  React.createElement(
 	                    'div',
@@ -32145,15 +32320,15 @@
 	              React.createElement(
 	                'div',
 	                { className: 'leftcontentwrapper' },
-	                React.createElement('a', { className: 'edit' })
+	                React.createElement('a', { className: 'edit click' })
 	              ),
 	              React.createElement(
 	                'a',
-	                { title: 'editprof' },
+	                { title: 'editprof click' },
 	                React.createElement('span', { className: 'leftnavimagewrap' }),
 	                React.createElement(
 	                  'div',
-	                  { onClick: this.onClick },
+	                  { className: 'click', onClick: this.redirectAbout },
 	                  'edit profile'
 	                )
 	              )
@@ -32188,7 +32363,7 @@
 	                ),
 	                React.createElement(
 	                  'a',
-	                  { title: 'newsfeed' },
+	                  { title: 'newsfeed noclick' },
 	                  React.createElement('span', { className: 'leftnavimagewrap' }),
 	                  React.createElement(
 	                    'div',
@@ -32211,7 +32386,7 @@
 	                ),
 	                React.createElement(
 	                  'a',
-	                  { title: 'messages' },
+	                  { title: 'messages noclick' },
 	                  React.createElement('span', { className: 'leftnavimagewrap' }),
 	                  React.createElement(
 	                    'div',
@@ -32234,7 +32409,7 @@
 	                ),
 	                React.createElement(
 	                  'a',
-	                  { title: 'events' },
+	                  { title: 'events noclick' },
 	                  React.createElement('span', { className: 'leftnavimagewrap' }),
 	                  React.createElement(
 	                    'div',
@@ -32257,7 +32432,7 @@
 	                ),
 	                React.createElement(
 	                  'a',
-	                  { title: 'saved' },
+	                  { title: 'saved noclick' },
 	                  React.createElement('span', { className: 'leftnavimagewrap' }),
 	                  React.createElement(
 	                    'div',
@@ -32276,11 +32451,11 @@
 	                React.createElement(
 	                  'div',
 	                  { className: 'leftcontentwrapper' },
-	                  React.createElement('a', { className: 'salegroups' })
+	                  React.createElement('a', { className: 'salegroups noclick' })
 	                ),
 	                React.createElement(
 	                  'a',
-	                  { title: 'sale' },
+	                  { title: 'sale noclick' },
 	                  React.createElement('span', { className: 'leftnavimagewrap' }),
 	                  React.createElement(
 	                    'div',
@@ -32316,11 +32491,11 @@
 	                React.createElement(
 	                  'div',
 	                  { className: 'leftcontentwrapper' },
-	                  React.createElement('a', { className: 'likepages' })
+	                  React.createElement('a', { className: 'likepages noclick' })
 	                ),
 	                React.createElement(
 	                  'a',
-	                  { title: 'likepages' },
+	                  { title: 'likepages noclick' },
 	                  React.createElement('span', { className: 'leftnavimagewrap' }),
 	                  React.createElement(
 	                    'div',
@@ -32339,11 +32514,11 @@
 	                React.createElement(
 	                  'div',
 	                  { className: 'leftcontentwrapper' },
-	                  React.createElement('a', { className: 'pagesfeed' })
+	                  React.createElement('a', { className: 'pagesfeed noclick' })
 	                ),
 	                React.createElement(
 	                  'a',
-	                  { title: 'pagefeed' },
+	                  { title: 'pagefeed noclick' },
 	                  React.createElement('span', { className: 'leftnavimagewrap' }),
 	                  React.createElement(
 	                    'div',
@@ -32362,11 +32537,11 @@
 	                React.createElement(
 	                  'div',
 	                  { className: 'leftcontentwrapper' },
-	                  React.createElement('a', { className: 'createpage' })
+	                  React.createElement('a', { className: 'createpage noclick' })
 	                ),
 	                React.createElement(
 	                  'a',
-	                  { title: 'createpage' },
+	                  { title: 'createpage noclick' },
 	                  React.createElement('span', { className: 'leftnavimagewrap' }),
 	                  React.createElement(
 	                    'div',
@@ -32385,11 +32560,11 @@
 	                React.createElement(
 	                  'div',
 	                  { className: 'leftcontentwrapper' },
-	                  React.createElement('a', { className: 'createad' })
+	                  React.createElement('a', { className: 'createad noclick' })
 	                ),
 	                React.createElement(
 	                  'a',
-	                  { title: 'createad' },
+	                  { title: 'createad noclick' },
 	                  React.createElement('span', { className: 'leftnavimagewrap' }),
 	                  React.createElement(
 	                    'div',
@@ -32425,11 +32600,11 @@
 	                React.createElement(
 	                  'div',
 	                  { className: 'leftcontentwrapper' },
-	                  React.createElement('a', { className: 'creategroup' })
+	                  React.createElement('a', { className: 'creategroup noclick' })
 	                ),
 	                React.createElement(
 	                  'a',
-	                  { title: 'creategroup' },
+	                  { title: 'creategroup noclick' },
 	                  React.createElement('span', { className: 'leftnavimagewrap' }),
 	                  React.createElement(
 	                    'div',
@@ -32448,11 +32623,11 @@
 	                React.createElement(
 	                  'div',
 	                  { className: 'leftcontentwrapper' },
-	                  React.createElement('a', { className: 'newgroups' })
+	                  React.createElement('a', { className: 'newgroups noclick' })
 	                ),
 	                React.createElement(
 	                  'a',
-	                  { title: 'newgroup' },
+	                  { title: 'newgroup noclick' },
 	                  React.createElement('span', { className: 'leftnavimagewrap' }),
 	                  React.createElement(
 	                    'div',
@@ -32488,11 +32663,11 @@
 	                React.createElement(
 	                  'div',
 	                  { className: 'leftcontentwrapper' },
-	                  React.createElement('a', { className: 'family' })
+	                  React.createElement('a', { className: 'family noclick' })
 	                ),
 	                React.createElement(
 	                  'a',
-	                  { title: 'closelist' },
+	                  { title: 'closelist noclick' },
 	                  React.createElement('span', { className: 'leftnavimagewrap' }),
 	                  React.createElement(
 	                    'div',
@@ -32511,11 +32686,11 @@
 	                React.createElement(
 	                  'div',
 	                  { className: 'leftcontentwrapper' },
-	                  React.createElement('a', { className: 'closefriends' })
+	                  React.createElement('a', { className: 'closefriends noclick' })
 	                ),
 	                React.createElement(
 	                  'a',
-	                  { title: 'closelist' },
+	                  { title: 'closelist noclick' },
 	                  React.createElement('span', { className: 'leftnavimagewrap' }),
 	                  React.createElement(
 	                    'div',
@@ -32551,11 +32726,11 @@
 	                React.createElement(
 	                  'div',
 	                  { className: 'leftcontentwrapper' },
-	                  React.createElement('a', { className: 'pokes' })
+	                  React.createElement('a', { className: 'pokes noclick' })
 	                ),
 	                React.createElement(
 	                  'a',
-	                  { title: 'pokes' },
+	                  { title: 'pokes noclick' },
 	                  React.createElement('span', { className: 'leftnavimagewrap' }),
 	                  React.createElement(
 	                    'div',
@@ -32574,11 +32749,11 @@
 	                React.createElement(
 	                  'div',
 	                  { className: 'leftcontentwrapper' },
-	                  React.createElement('a', { className: 'photos' })
+	                  React.createElement('a', { className: 'photos noclick' })
 	                ),
 	                React.createElement(
 	                  'a',
-	                  { title: 'photos' },
+	                  { title: 'photos noclick' },
 	                  React.createElement('span', { className: 'leftnavimagewrap' }),
 	                  React.createElement(
 	                    'div',
@@ -32597,11 +32772,11 @@
 	                React.createElement(
 	                  'div',
 	                  { className: 'leftcontentwrapper' },
-	                  React.createElement('a', { className: 'gamesfeed' })
+	                  React.createElement('a', { className: 'gamesfeed noclick' })
 	                ),
 	                React.createElement(
 	                  'a',
-	                  { title: 'gamefeed' },
+	                  { title: 'gamefeed noclick' },
 	                  React.createElement('span', { className: 'leftnavimagewrap' }),
 	                  React.createElement(
 	                    'div',
@@ -32637,11 +32812,11 @@
 	                React.createElement(
 	                  'div',
 	                  { className: 'leftcontentwrapper' },
-	                  React.createElement('a', { className: 'pagesandpublic' })
+	                  React.createElement('a', { className: 'pagesandpublic noclick' })
 	                ),
 	                React.createElement(
 	                  'a',
-	                  { title: 'pagepublic' },
+	                  { title: 'pagepublic noclick' },
 	                  React.createElement('span', { className: 'leftnavimagewrap' }),
 	                  React.createElement(
 	                    'div',
@@ -32677,11 +32852,11 @@
 	                React.createElement(
 	                  'div',
 	                  { className: 'leftcontentwrapper' },
-	                  React.createElement('a', { className: 'createevent' })
+	                  React.createElement('a', { className: 'createevent noclick' })
 	                ),
 	                React.createElement(
 	                  'a',
-	                  { title: 'createevent' },
+	                  { title: 'createevent noclick' },
 	                  React.createElement('span', { className: 'leftnavimagewrap' }),
 	                  React.createElement(
 	                    'div',
@@ -32708,17 +32883,21 @@
 	var React = __webpack_require__(1);
 	var ApiUtil = __webpack_require__(241);
 	var PhotoForm = __webpack_require__(245);
+	var DeletePhotoModal = __webpack_require__(248);
 	
 	var PhotoShow = React.createClass({
 	  displayName: 'PhotoShow',
 	
 	
 	  render: function () {
-	
 	    var divStyle = {
 	      backgroundImage: 'url(' + this.props.url + ')'
 	    };
-	    return React.createElement('div', { id: 'photoshow', className: this.props.type, style: divStyle });
+	    return React.createElement(
+	      'div',
+	      { onClick: this.props.clickAction, id: 'photoshow', className: this.props.type, style: divStyle },
+	      this.props.user === window.currentUserId ? React.createElement(DeletePhotoModal, { id: this.props.id }) : null
+	    );
 	  }
 	
 	});
@@ -32744,18 +32923,24 @@
 	    cloudinary.openUploadWidget({
 	      upload_preset: window.UPLOAD_PRESET
 	    }, function (error, result) {
-	      photo.url = result[0].url;
-	      photo.public_id = result[0].public_id;
-	
-	      ApiUtil.createNewPhoto(photo);
+	      if (result !== undefined) {
+	        photo.url = result[0].url;
+	        photo.public_id = result[0].public_id;
+	        console.log(photo);
+	        ApiUtil.createNewPhoto(photo);
+	      }
 	    });
 	  },
 	
 	  render: function () {
 	    return React.createElement(
 	      'div',
-	      null,
-	      React.createElement('button', { onClick: this.uploadPhoto.bind(this, event) })
+	      { className: 'clickable photoadd', onClick: this.uploadPhoto.bind(this, event) },
+	      React.createElement(
+	        'div',
+	        { className: 'uploadbutton' },
+	        'Upload'
+	      )
 	    );
 	  }
 	
@@ -32799,10 +32984,14 @@
 	  return _photos;
 	};
 	
+	PhotoStore.topNine = function () {
+	  return _photos.slice(0, 9);
+	};
+	
 	removePhoto = function (photo) {
 	  var photos = [];
 	  _photos.forEach(function (el, idx) {
-	    if (el.id !== photo.id) {
+	    if (el.albumphoto.id !== photo.photo.id) {
 	      photos.push(el);
 	    }
 	  });
@@ -32853,10 +33042,2035 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
+	var Modal = __webpack_require__(249);
 	var ApiUtil = __webpack_require__(241);
-	var TimelineStore = __webpack_require__(249);
-	var TimelineIndexItem = __webpack_require__(250);
-	var PostForm = __webpack_require__(263);
+	
+	const customStyles = {
+	  overlay: {
+	    position: 'fixed',
+	    top: 0,
+	    left: 0,
+	    right: 0,
+	    bottom: 0,
+	    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+	    zIndex: 10
+	  },
+	  content: {
+	    top: '50%',
+	    left: '50%',
+	    right: 'auto',
+	    bottom: 'auto',
+	    marginRight: '-50%',
+	    background: "#fff",
+	    transform: 'translate(-50%, -50%)',
+	    padding: 10,
+	    border: 0
+	  }
+	};
+	
+	var DeletePhotoModal = React.createClass({
+	  displayName: 'DeletePhotoModal',
+	
+	
+	  getInitialState: function () {
+	    return {
+	      modalIsOpen: false
+	    };
+	  },
+	
+	  openModal: function () {
+	    this.setState({ modalIsOpen: true });
+	  },
+	
+	  closeModal: function () {
+	    this.setState({ modalIsOpen: false });
+	  },
+	
+	  deletePhoto: function (event) {
+	    event.preventDefault();
+	    ApiUtil.deletePhoto(this.props.id);
+	    this.closeModal();
+	  },
+	
+	  display: function () {
+	    return React.createElement(
+	      Modal,
+	      {
+	        isOpen: this.state.modalIsOpen,
+	        onRequestClose: this.closeModal,
+	        style: customStyles },
+	      React.createElement(
+	        'div',
+	        { className: 'postcommentwrapper' },
+	        React.createElement(
+	          'div',
+	          null,
+	          'would you like to delete this photo?'
+	        ),
+	        React.createElement(
+	          'div',
+	          { className: 'commentformwrapper' },
+	          React.createElement(
+	            'a',
+	            { className: 'postbutton', onClick: this.deletePhoto },
+	            'yes'
+	          ),
+	          React.createElement(
+	            'a',
+	            { className: 'postbutton', onClick: this.closeModal },
+	            'no'
+	          )
+	        )
+	      )
+	    );
+	  },
+	
+	  render: function () {
+	    return React.createElement(
+	      'div',
+	      null,
+	      React.createElement('div', { className: 'delete', onClick: this.openModal }),
+	      this.display()
+	    );
+	  }
+	
+	});
+	
+	module.exports = DeletePhotoModal;
+
+/***/ },
+/* 249 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__(250);
+	
+
+
+/***/ },
+/* 250 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(process) {var React = __webpack_require__(1);
+	var ReactDOM = __webpack_require__(158);
+	var ExecutionEnvironment = __webpack_require__(251);
+	var ModalPortal = React.createFactory(__webpack_require__(252));
+	var ariaAppHider = __webpack_require__(267);
+	var elementClass = __webpack_require__(268);
+	var renderSubtreeIntoContainer = __webpack_require__(158).unstable_renderSubtreeIntoContainer;
+	
+	var SafeHTMLElement = ExecutionEnvironment.canUseDOM ? window.HTMLElement : {};
+	
+	var Modal = module.exports = React.createClass({
+	
+	  displayName: 'Modal',
+	  statics: {
+	    setAppElement: ariaAppHider.setElement,
+	    injectCSS: function() {
+	      "production" !== process.env.NODE_ENV
+	        && console.warn('React-Modal: injectCSS has been deprecated ' +
+	                        'and no longer has any effect. It will be removed in a later version');
+	    }
+	  },
+	
+	  propTypes: {
+	    isOpen: React.PropTypes.bool.isRequired,
+	    style: React.PropTypes.shape({
+	      content: React.PropTypes.object,
+	      overlay: React.PropTypes.object
+	    }),
+	    appElement: React.PropTypes.instanceOf(SafeHTMLElement),
+	    onRequestClose: React.PropTypes.func,
+	    closeTimeoutMS: React.PropTypes.number,
+	    ariaHideApp: React.PropTypes.bool
+	  },
+	
+	  getDefaultProps: function () {
+	    return {
+	      isOpen: false,
+	      ariaHideApp: true,
+	      closeTimeoutMS: 0
+	    };
+	  },
+	
+	  componentDidMount: function() {
+	    this.node = document.createElement('div');
+	    this.node.className = 'ReactModalPortal';
+	    document.body.appendChild(this.node);
+	    this.renderPortal(this.props);
+	  },
+	
+	  componentWillReceiveProps: function(newProps) {
+	    this.renderPortal(newProps);
+	  },
+	
+	  componentWillUnmount: function() {
+	    ReactDOM.unmountComponentAtNode(this.node);
+	    document.body.removeChild(this.node);
+	  },
+	
+	  renderPortal: function(props) {
+	    if (props.isOpen) {
+	      elementClass(document.body).add('ReactModal__Body--open');
+	    } else {
+	      elementClass(document.body).remove('ReactModal__Body--open');
+	    }
+	
+	    if (props.ariaHideApp) {
+	      ariaAppHider.toggle(props.isOpen, props.appElement);
+	    }
+	    sanitizeProps(props);
+	    this.portal = renderSubtreeIntoContainer(this, ModalPortal(props), this.node);
+	  },
+	
+	  render: function () {
+	    return React.DOM.noscript();
+	  }
+	});
+	
+	function sanitizeProps(props) {
+	  delete props.ref;
+	}
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)))
+
+/***/ },
+/* 251 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_RESULT__;/*!
+	  Copyright (c) 2015 Jed Watson.
+	  Based on code that is Copyright 2013-2015, Facebook, Inc.
+	  All rights reserved.
+	*/
+	
+	(function () {
+		'use strict';
+	
+		var canUseDOM = !!(
+			typeof window !== 'undefined' &&
+			window.document &&
+			window.document.createElement
+		);
+	
+		var ExecutionEnvironment = {
+	
+			canUseDOM: canUseDOM,
+	
+			canUseWorkers: typeof Worker !== 'undefined',
+	
+			canUseEventListeners:
+				canUseDOM && !!(window.addEventListener || window.attachEvent),
+	
+			canUseViewport: canUseDOM && !!window.screen
+	
+		};
+	
+		if (true) {
+			!(__WEBPACK_AMD_DEFINE_RESULT__ = function () {
+				return ExecutionEnvironment;
+			}.call(exports, __webpack_require__, exports, module), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+		} else if (typeof module !== 'undefined' && module.exports) {
+			module.exports = ExecutionEnvironment;
+		} else {
+			window.ExecutionEnvironment = ExecutionEnvironment;
+		}
+	
+	}());
+
+
+/***/ },
+/* 252 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(1);
+	var div = React.DOM.div;
+	var focusManager = __webpack_require__(253);
+	var scopeTab = __webpack_require__(255);
+	var Assign = __webpack_require__(256);
+	
+	
+	// so that our CSS is statically analyzable
+	var CLASS_NAMES = {
+	  overlay: {
+	    base: 'ReactModal__Overlay',
+	    afterOpen: 'ReactModal__Overlay--after-open',
+	    beforeClose: 'ReactModal__Overlay--before-close'
+	  },
+	  content: {
+	    base: 'ReactModal__Content',
+	    afterOpen: 'ReactModal__Content--after-open',
+	    beforeClose: 'ReactModal__Content--before-close'
+	  }
+	};
+	
+	var defaultStyles = {
+	  overlay: {
+	    position        : 'fixed',
+	    top             : 0,
+	    left            : 0,
+	    right           : 0,
+	    bottom          : 0,
+	    backgroundColor : 'rgba(255, 255, 255, 0.75)'
+	  },
+	  content: {
+	    position                : 'absolute',
+	    top                     : '40px',
+	    left                    : '40px',
+	    right                   : '40px',
+	    bottom                  : '40px',
+	    border                  : '1px solid #ccc',
+	    background              : '#fff',
+	    overflow                : 'auto',
+	    WebkitOverflowScrolling : 'touch',
+	    borderRadius            : '4px',
+	    outline                 : 'none',
+	    padding                 : '20px'
+	  }
+	};
+	
+	function stopPropagation(event) {
+	  event.stopPropagation();
+	}
+	
+	var ModalPortal = module.exports = React.createClass({
+	
+	  displayName: 'ModalPortal',
+	
+	  getDefaultProps: function() {
+	    return {
+	      style: {
+	        overlay: {},
+	        content: {}
+	      }
+	    };
+	  },
+	
+	  getInitialState: function() {
+	    return {
+	      afterOpen: false,
+	      beforeClose: false
+	    };
+	  },
+	
+	  componentDidMount: function() {
+	    // Focus needs to be set when mounting and already open
+	    if (this.props.isOpen) {
+	      this.setFocusAfterRender(true);
+	      this.open();
+	    }
+	  },
+	
+	  componentWillUnmount: function() {
+	    clearTimeout(this.closeTimer);
+	  },
+	
+	  componentWillReceiveProps: function(newProps) {
+	    // Focus only needs to be set once when the modal is being opened
+	    if (!this.props.isOpen && newProps.isOpen) {
+	      this.setFocusAfterRender(true);
+	      this.open();
+	    } else if (this.props.isOpen && !newProps.isOpen) {
+	      this.close();
+	    }
+	  },
+	
+	  componentDidUpdate: function () {
+	    if (this.focusAfterRender) {
+	      this.focusContent();
+	      this.setFocusAfterRender(false);
+	    }
+	  },
+	
+	  setFocusAfterRender: function (focus) {
+	    this.focusAfterRender = focus;
+	  },
+	
+	  open: function() {
+	    focusManager.setupScopedFocus(this.node);
+	    focusManager.markForFocusLater();
+	    this.setState({isOpen: true}, function() {
+	      this.setState({afterOpen: true});
+	    }.bind(this));
+	  },
+	
+	  close: function() {
+	    if (!this.ownerHandlesClose())
+	      return;
+	    if (this.props.closeTimeoutMS > 0)
+	      this.closeWithTimeout();
+	    else
+	      this.closeWithoutTimeout();
+	  },
+	
+	  focusContent: function() {
+	    this.refs.content.focus();
+	  },
+	
+	  closeWithTimeout: function() {
+	    this.setState({beforeClose: true}, function() {
+	      this.closeTimer = setTimeout(this.closeWithoutTimeout, this.props.closeTimeoutMS);
+	    }.bind(this));
+	  },
+	
+	  closeWithoutTimeout: function() {
+	    this.setState({
+	      afterOpen: false,
+	      beforeClose: false
+	    }, this.afterClose);
+	  },
+	
+	  afterClose: function() {
+	    focusManager.returnFocus();
+	    focusManager.teardownScopedFocus();
+	  },
+	
+	  handleKeyDown: function(event) {
+	    if (event.keyCode == 9 /*tab*/) scopeTab(this.refs.content, event);
+	    if (event.keyCode == 27 /*esc*/) this.requestClose();
+	  },
+	
+	  handleOverlayClick: function() {
+	    if (this.ownerHandlesClose())
+	      this.requestClose();
+	    else
+	      this.focusContent();
+	  },
+	
+	  requestClose: function() {
+	    if (this.ownerHandlesClose())
+	      this.props.onRequestClose();
+	  },
+	
+	  ownerHandlesClose: function() {
+	    return this.props.onRequestClose;
+	  },
+	
+	  shouldBeClosed: function() {
+	    return !this.props.isOpen && !this.state.beforeClose;
+	  },
+	
+	  buildClassName: function(which, additional) {
+	    var className = CLASS_NAMES[which].base;
+	    if (this.state.afterOpen)
+	      className += ' '+CLASS_NAMES[which].afterOpen;
+	    if (this.state.beforeClose)
+	      className += ' '+CLASS_NAMES[which].beforeClose;
+	    return additional ? className + ' ' + additional : className;
+	  },
+	
+	  render: function() {
+	    return this.shouldBeClosed() ? div() : (
+	      div({
+	        ref: "overlay",
+	        className: this.buildClassName('overlay', this.props.overlayClassName),
+	        style: Assign({}, defaultStyles.overlay, this.props.style.overlay || {}),
+	        onClick: this.handleOverlayClick
+	      },
+	        div({
+	          ref: "content",
+	          style: Assign({}, defaultStyles.content, this.props.style.content || {}),
+	          className: this.buildClassName('content', this.props.className),
+	          tabIndex: "-1",
+	          onClick: stopPropagation,
+	          onKeyDown: this.handleKeyDown
+	        },
+	          this.props.children
+	        )
+	      )
+	    );
+	  }
+	});
+
+
+/***/ },
+/* 253 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var findTabbable = __webpack_require__(254);
+	var modalElement = null;
+	var focusLaterElement = null;
+	var needToFocus = false;
+	
+	function handleBlur(event) {
+	  needToFocus = true;
+	}
+	
+	function handleFocus(event) {
+	  if (needToFocus) {
+	    needToFocus = false;
+	    if (!modalElement) {
+	      return;
+	    }
+	    // need to see how jQuery shims document.on('focusin') so we don't need the
+	    // setTimeout, firefox doesn't support focusin, if it did, we could focus
+	    // the element outside of a setTimeout. Side-effect of this implementation 
+	    // is that the document.body gets focus, and then we focus our element right 
+	    // after, seems fine.
+	    setTimeout(function() {
+	      if (modalElement.contains(document.activeElement))
+	        return;
+	      var el = (findTabbable(modalElement)[0] || modalElement);
+	      el.focus();
+	    }, 0);
+	  }
+	}
+	
+	exports.markForFocusLater = function() {
+	  focusLaterElement = document.activeElement;
+	};
+	
+	exports.returnFocus = function() {
+	  try {
+	    focusLaterElement.focus();
+	  }
+	  catch (e) {
+	    console.warn('You tried to return focus to '+focusLaterElement+' but it is not in the DOM anymore');
+	  }
+	  focusLaterElement = null;
+	};
+	
+	exports.setupScopedFocus = function(element) {
+	  modalElement = element;
+	
+	  if (window.addEventListener) {
+	    window.addEventListener('blur', handleBlur, false);
+	    document.addEventListener('focus', handleFocus, true);
+	  } else {
+	    window.attachEvent('onBlur', handleBlur);
+	    document.attachEvent('onFocus', handleFocus);
+	  }
+	};
+	
+	exports.teardownScopedFocus = function() {
+	  modalElement = null;
+	
+	  if (window.addEventListener) {
+	    window.removeEventListener('blur', handleBlur);
+	    document.removeEventListener('focus', handleFocus);
+	  } else {
+	    window.detachEvent('onBlur', handleBlur);
+	    document.detachEvent('onFocus', handleFocus);
+	  }
+	};
+	
+	
+
+
+/***/ },
+/* 254 */
+/***/ function(module, exports) {
+
+	/*!
+	 * Adapted from jQuery UI core
+	 *
+	 * http://jqueryui.com
+	 *
+	 * Copyright 2014 jQuery Foundation and other contributors
+	 * Released under the MIT license.
+	 * http://jquery.org/license
+	 *
+	 * http://api.jqueryui.com/category/ui-core/
+	 */
+	
+	function focusable(element, isTabIndexNotNaN) {
+	  var nodeName = element.nodeName.toLowerCase();
+	  return (/input|select|textarea|button|object/.test(nodeName) ?
+	    !element.disabled :
+	    "a" === nodeName ?
+	      element.href || isTabIndexNotNaN :
+	      isTabIndexNotNaN) && visible(element);
+	}
+	
+	function hidden(el) {
+	  return (el.offsetWidth <= 0 && el.offsetHeight <= 0) ||
+	    el.style.display === 'none';
+	}
+	
+	function visible(element) {
+	  while (element) {
+	    if (element === document.body) break;
+	    if (hidden(element)) return false;
+	    element = element.parentNode;
+	  }
+	  return true;
+	}
+	
+	function tabbable(element) {
+	  var tabIndex = element.getAttribute('tabindex');
+	  if (tabIndex === null) tabIndex = undefined;
+	  var isTabIndexNaN = isNaN(tabIndex);
+	  return (isTabIndexNaN || tabIndex >= 0) && focusable(element, !isTabIndexNaN);
+	}
+	
+	function findTabbableDescendants(element) {
+	  return [].slice.call(element.querySelectorAll('*'), 0).filter(function(el) {
+	    return tabbable(el);
+	  });
+	}
+	
+	module.exports = findTabbableDescendants;
+	
+
+
+/***/ },
+/* 255 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var findTabbable = __webpack_require__(254);
+	
+	module.exports = function(node, event) {
+	  var tabbable = findTabbable(node);
+	  var finalTabbable = tabbable[event.shiftKey ? 0 : tabbable.length - 1];
+	  var leavingFinalTabbable = (
+	    finalTabbable === document.activeElement ||
+	    // handle immediate shift+tab after opening with mouse
+	    node === document.activeElement
+	  );
+	  if (!leavingFinalTabbable) return;
+	  event.preventDefault();
+	  var target = tabbable[event.shiftKey ? tabbable.length - 1 : 0];
+	  target.focus();
+	};
+
+
+/***/ },
+/* 256 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.2.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var baseAssign = __webpack_require__(257),
+	    createAssigner = __webpack_require__(263),
+	    keys = __webpack_require__(259);
+	
+	/**
+	 * A specialized version of `_.assign` for customizing assigned values without
+	 * support for argument juggling, multiple sources, and `this` binding `customizer`
+	 * functions.
+	 *
+	 * @private
+	 * @param {Object} object The destination object.
+	 * @param {Object} source The source object.
+	 * @param {Function} customizer The function to customize assigned values.
+	 * @returns {Object} Returns `object`.
+	 */
+	function assignWith(object, source, customizer) {
+	  var index = -1,
+	      props = keys(source),
+	      length = props.length;
+	
+	  while (++index < length) {
+	    var key = props[index],
+	        value = object[key],
+	        result = customizer(value, source[key], key, object, source);
+	
+	    if ((result === result ? (result !== value) : (value === value)) ||
+	        (value === undefined && !(key in object))) {
+	      object[key] = result;
+	    }
+	  }
+	  return object;
+	}
+	
+	/**
+	 * Assigns own enumerable properties of source object(s) to the destination
+	 * object. Subsequent sources overwrite property assignments of previous sources.
+	 * If `customizer` is provided it is invoked to produce the assigned values.
+	 * The `customizer` is bound to `thisArg` and invoked with five arguments:
+	 * (objectValue, sourceValue, key, object, source).
+	 *
+	 * **Note:** This method mutates `object` and is based on
+	 * [`Object.assign`](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.assign).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @alias extend
+	 * @category Object
+	 * @param {Object} object The destination object.
+	 * @param {...Object} [sources] The source objects.
+	 * @param {Function} [customizer] The function to customize assigned values.
+	 * @param {*} [thisArg] The `this` binding of `customizer`.
+	 * @returns {Object} Returns `object`.
+	 * @example
+	 *
+	 * _.assign({ 'user': 'barney' }, { 'age': 40 }, { 'user': 'fred' });
+	 * // => { 'user': 'fred', 'age': 40 }
+	 *
+	 * // using a customizer callback
+	 * var defaults = _.partialRight(_.assign, function(value, other) {
+	 *   return _.isUndefined(value) ? other : value;
+	 * });
+	 *
+	 * defaults({ 'user': 'barney' }, { 'age': 36 }, { 'user': 'fred' });
+	 * // => { 'user': 'barney', 'age': 36 }
+	 */
+	var assign = createAssigner(function(object, source, customizer) {
+	  return customizer
+	    ? assignWith(object, source, customizer)
+	    : baseAssign(object, source);
+	});
+	
+	module.exports = assign;
+
+
+/***/ },
+/* 257 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.2.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var baseCopy = __webpack_require__(258),
+	    keys = __webpack_require__(259);
+	
+	/**
+	 * The base implementation of `_.assign` without support for argument juggling,
+	 * multiple sources, and `customizer` functions.
+	 *
+	 * @private
+	 * @param {Object} object The destination object.
+	 * @param {Object} source The source object.
+	 * @returns {Object} Returns `object`.
+	 */
+	function baseAssign(object, source) {
+	  return source == null
+	    ? object
+	    : baseCopy(source, keys(source), object);
+	}
+	
+	module.exports = baseAssign;
+
+
+/***/ },
+/* 258 */
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/**
+	 * Copies properties of `source` to `object`.
+	 *
+	 * @private
+	 * @param {Object} source The object to copy properties from.
+	 * @param {Array} props The property names to copy.
+	 * @param {Object} [object={}] The object to copy properties to.
+	 * @returns {Object} Returns `object`.
+	 */
+	function baseCopy(source, props, object) {
+	  object || (object = {});
+	
+	  var index = -1,
+	      length = props.length;
+	
+	  while (++index < length) {
+	    var key = props[index];
+	    object[key] = source[key];
+	  }
+	  return object;
+	}
+	
+	module.exports = baseCopy;
+
+
+/***/ },
+/* 259 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.1.2 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var getNative = __webpack_require__(260),
+	    isArguments = __webpack_require__(261),
+	    isArray = __webpack_require__(262);
+	
+	/** Used to detect unsigned integer values. */
+	var reIsUint = /^\d+$/;
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+	
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeKeys = getNative(Object, 'keys');
+	
+	/**
+	 * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
+	 * of an array-like value.
+	 */
+	var MAX_SAFE_INTEGER = 9007199254740991;
+	
+	/**
+	 * The base implementation of `_.property` without support for deep paths.
+	 *
+	 * @private
+	 * @param {string} key The key of the property to get.
+	 * @returns {Function} Returns the new function.
+	 */
+	function baseProperty(key) {
+	  return function(object) {
+	    return object == null ? undefined : object[key];
+	  };
+	}
+	
+	/**
+	 * Gets the "length" property value of `object`.
+	 *
+	 * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
+	 * that affects Safari on at least iOS 8.1-8.3 ARM64.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @returns {*} Returns the "length" value.
+	 */
+	var getLength = baseProperty('length');
+	
+	/**
+	 * Checks if `value` is array-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+	 */
+	function isArrayLike(value) {
+	  return value != null && isLength(getLength(value));
+	}
+	
+	/**
+	 * Checks if `value` is a valid array-like index.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+	 */
+	function isIndex(value, length) {
+	  value = (typeof value == 'number' || reIsUint.test(value)) ? +value : -1;
+	  length = length == null ? MAX_SAFE_INTEGER : length;
+	  return value > -1 && value % 1 == 0 && value < length;
+	}
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * A fallback implementation of `Object.keys` which creates an array of the
+	 * own enumerable property names of `object`.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @returns {Array} Returns the array of property names.
+	 */
+	function shimKeys(object) {
+	  var props = keysIn(object),
+	      propsLength = props.length,
+	      length = propsLength && object.length;
+	
+	  var allowIndexes = !!length && isLength(length) &&
+	    (isArray(object) || isArguments(object));
+	
+	  var index = -1,
+	      result = [];
+	
+	  while (++index < propsLength) {
+	    var key = props[index];
+	    if ((allowIndexes && isIndex(key, length)) || hasOwnProperty.call(object, key)) {
+	      result.push(key);
+	    }
+	  }
+	  return result;
+	}
+	
+	/**
+	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
+	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+	 * @example
+	 *
+	 * _.isObject({});
+	 * // => true
+	 *
+	 * _.isObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObject(1);
+	 * // => false
+	 */
+	function isObject(value) {
+	  // Avoid a V8 JIT bug in Chrome 19-20.
+	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+	  var type = typeof value;
+	  return !!value && (type == 'object' || type == 'function');
+	}
+	
+	/**
+	 * Creates an array of the own enumerable property names of `object`.
+	 *
+	 * **Note:** Non-object values are coerced to objects. See the
+	 * [ES spec](http://ecma-international.org/ecma-262/6.0/#sec-object.keys)
+	 * for more details.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Object
+	 * @param {Object} object The object to query.
+	 * @returns {Array} Returns the array of property names.
+	 * @example
+	 *
+	 * function Foo() {
+	 *   this.a = 1;
+	 *   this.b = 2;
+	 * }
+	 *
+	 * Foo.prototype.c = 3;
+	 *
+	 * _.keys(new Foo);
+	 * // => ['a', 'b'] (iteration order is not guaranteed)
+	 *
+	 * _.keys('hi');
+	 * // => ['0', '1']
+	 */
+	var keys = !nativeKeys ? shimKeys : function(object) {
+	  var Ctor = object == null ? undefined : object.constructor;
+	  if ((typeof Ctor == 'function' && Ctor.prototype === object) ||
+	      (typeof object != 'function' && isArrayLike(object))) {
+	    return shimKeys(object);
+	  }
+	  return isObject(object) ? nativeKeys(object) : [];
+	};
+	
+	/**
+	 * Creates an array of the own and inherited enumerable property names of `object`.
+	 *
+	 * **Note:** Non-object values are coerced to objects.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Object
+	 * @param {Object} object The object to query.
+	 * @returns {Array} Returns the array of property names.
+	 * @example
+	 *
+	 * function Foo() {
+	 *   this.a = 1;
+	 *   this.b = 2;
+	 * }
+	 *
+	 * Foo.prototype.c = 3;
+	 *
+	 * _.keysIn(new Foo);
+	 * // => ['a', 'b', 'c'] (iteration order is not guaranteed)
+	 */
+	function keysIn(object) {
+	  if (object == null) {
+	    return [];
+	  }
+	  if (!isObject(object)) {
+	    object = Object(object);
+	  }
+	  var length = object.length;
+	  length = (length && isLength(length) &&
+	    (isArray(object) || isArguments(object)) && length) || 0;
+	
+	  var Ctor = object.constructor,
+	      index = -1,
+	      isProto = typeof Ctor == 'function' && Ctor.prototype === object,
+	      result = Array(length),
+	      skipIndexes = length > 0;
+	
+	  while (++index < length) {
+	    result[index] = (index + '');
+	  }
+	  for (var key in object) {
+	    if (!(skipIndexes && isIndex(key, length)) &&
+	        !(key == 'constructor' && (isProto || !hasOwnProperty.call(object, key)))) {
+	      result.push(key);
+	    }
+	  }
+	  return result;
+	}
+	
+	module.exports = keys;
+
+
+/***/ },
+/* 260 */
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.9.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** `Object#toString` result references. */
+	var funcTag = '[object Function]';
+	
+	/** Used to detect host constructors (Safari > 5). */
+	var reIsHostCtor = /^\[object .+?Constructor\]$/;
+	
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return !!value && typeof value == 'object';
+	}
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to resolve the decompiled source of functions. */
+	var fnToString = Function.prototype.toString;
+	
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+	
+	/**
+	 * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+	 * of values.
+	 */
+	var objToString = objectProto.toString;
+	
+	/** Used to detect if a method is native. */
+	var reIsNative = RegExp('^' +
+	  fnToString.call(hasOwnProperty).replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')
+	  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+	);
+	
+	/**
+	 * Gets the native function at `key` of `object`.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @param {string} key The key of the method to get.
+	 * @returns {*} Returns the function if it's native, else `undefined`.
+	 */
+	function getNative(object, key) {
+	  var value = object == null ? undefined : object[key];
+	  return isNative(value) ? value : undefined;
+	}
+	
+	/**
+	 * Checks if `value` is classified as a `Function` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isFunction(_);
+	 * // => true
+	 *
+	 * _.isFunction(/abc/);
+	 * // => false
+	 */
+	function isFunction(value) {
+	  // The use of `Object#toString` avoids issues with the `typeof` operator
+	  // in older versions of Chrome and Safari which return 'function' for regexes
+	  // and Safari 8 equivalents which return 'object' for typed array constructors.
+	  return isObject(value) && objToString.call(value) == funcTag;
+	}
+	
+	/**
+	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
+	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+	 * @example
+	 *
+	 * _.isObject({});
+	 * // => true
+	 *
+	 * _.isObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObject(1);
+	 * // => false
+	 */
+	function isObject(value) {
+	  // Avoid a V8 JIT bug in Chrome 19-20.
+	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+	  var type = typeof value;
+	  return !!value && (type == 'object' || type == 'function');
+	}
+	
+	/**
+	 * Checks if `value` is a native function.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
+	 * @example
+	 *
+	 * _.isNative(Array.prototype.push);
+	 * // => true
+	 *
+	 * _.isNative(_);
+	 * // => false
+	 */
+	function isNative(value) {
+	  if (value == null) {
+	    return false;
+	  }
+	  if (isFunction(value)) {
+	    return reIsNative.test(fnToString.call(value));
+	  }
+	  return isObjectLike(value) && reIsHostCtor.test(value);
+	}
+	
+	module.exports = getNative;
+
+
+/***/ },
+/* 261 */
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.0.8 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modularize exports="npm" -o ./`
+	 * Copyright 2012-2016 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2016 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** Used as references for various `Number` constants. */
+	var MAX_SAFE_INTEGER = 9007199254740991;
+	
+	/** `Object#toString` result references. */
+	var argsTag = '[object Arguments]',
+	    funcTag = '[object Function]',
+	    genTag = '[object GeneratorFunction]';
+	
+	/** Used for built-in method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+	
+	/**
+	 * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+	 * of values.
+	 */
+	var objectToString = objectProto.toString;
+	
+	/** Built-in value references. */
+	var propertyIsEnumerable = objectProto.propertyIsEnumerable;
+	
+	/**
+	 * The base implementation of `_.property` without support for deep paths.
+	 *
+	 * @private
+	 * @param {string} key The key of the property to get.
+	 * @returns {Function} Returns the new function.
+	 */
+	function baseProperty(key) {
+	  return function(object) {
+	    return object == null ? undefined : object[key];
+	  };
+	}
+	
+	/**
+	 * Gets the "length" property value of `object`.
+	 *
+	 * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
+	 * that affects Safari on at least iOS 8.1-8.3 ARM64.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @returns {*} Returns the "length" value.
+	 */
+	var getLength = baseProperty('length');
+	
+	/**
+	 * Checks if `value` is likely an `arguments` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isArguments(function() { return arguments; }());
+	 * // => true
+	 *
+	 * _.isArguments([1, 2, 3]);
+	 * // => false
+	 */
+	function isArguments(value) {
+	  // Safari 8.1 incorrectly makes `arguments.callee` enumerable in strict mode.
+	  return isArrayLikeObject(value) && hasOwnProperty.call(value, 'callee') &&
+	    (!propertyIsEnumerable.call(value, 'callee') || objectToString.call(value) == argsTag);
+	}
+	
+	/**
+	 * Checks if `value` is array-like. A value is considered array-like if it's
+	 * not a function and has a `value.length` that's an integer greater than or
+	 * equal to `0` and less than or equal to `Number.MAX_SAFE_INTEGER`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+	 * @example
+	 *
+	 * _.isArrayLike([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isArrayLike(document.body.children);
+	 * // => true
+	 *
+	 * _.isArrayLike('abc');
+	 * // => true
+	 *
+	 * _.isArrayLike(_.noop);
+	 * // => false
+	 */
+	function isArrayLike(value) {
+	  return value != null && isLength(getLength(value)) && !isFunction(value);
+	}
+	
+	/**
+	 * This method is like `_.isArrayLike` except that it also checks if `value`
+	 * is an object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an array-like object, else `false`.
+	 * @example
+	 *
+	 * _.isArrayLikeObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isArrayLikeObject(document.body.children);
+	 * // => true
+	 *
+	 * _.isArrayLikeObject('abc');
+	 * // => false
+	 *
+	 * _.isArrayLikeObject(_.noop);
+	 * // => false
+	 */
+	function isArrayLikeObject(value) {
+	  return isObjectLike(value) && isArrayLike(value);
+	}
+	
+	/**
+	 * Checks if `value` is classified as a `Function` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isFunction(_);
+	 * // => true
+	 *
+	 * _.isFunction(/abc/);
+	 * // => false
+	 */
+	function isFunction(value) {
+	  // The use of `Object#toString` avoids issues with the `typeof` operator
+	  // in Safari 8 which returns 'object' for typed array and weak map constructors,
+	  // and PhantomJS 1.9 which returns 'function' for `NodeList` instances.
+	  var tag = isObject(value) ? objectToString.call(value) : '';
+	  return tag == funcTag || tag == genTag;
+	}
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is loosely based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 * @example
+	 *
+	 * _.isLength(3);
+	 * // => true
+	 *
+	 * _.isLength(Number.MIN_VALUE);
+	 * // => false
+	 *
+	 * _.isLength(Infinity);
+	 * // => false
+	 *
+	 * _.isLength('3');
+	 * // => false
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' &&
+	    value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
+	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+	 * @example
+	 *
+	 * _.isObject({});
+	 * // => true
+	 *
+	 * _.isObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObject(_.noop);
+	 * // => true
+	 *
+	 * _.isObject(null);
+	 * // => false
+	 */
+	function isObject(value) {
+	  var type = typeof value;
+	  return !!value && (type == 'object' || type == 'function');
+	}
+	
+	/**
+	 * Checks if `value` is object-like. A value is object-like if it's not `null`
+	 * and has a `typeof` result of "object".
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 * @example
+	 *
+	 * _.isObjectLike({});
+	 * // => true
+	 *
+	 * _.isObjectLike([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObjectLike(_.noop);
+	 * // => false
+	 *
+	 * _.isObjectLike(null);
+	 * // => false
+	 */
+	function isObjectLike(value) {
+	  return !!value && typeof value == 'object';
+	}
+	
+	module.exports = isArguments;
+
+
+/***/ },
+/* 262 */
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.0.4 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** `Object#toString` result references. */
+	var arrayTag = '[object Array]',
+	    funcTag = '[object Function]';
+	
+	/** Used to detect host constructors (Safari > 5). */
+	var reIsHostCtor = /^\[object .+?Constructor\]$/;
+	
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return !!value && typeof value == 'object';
+	}
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to resolve the decompiled source of functions. */
+	var fnToString = Function.prototype.toString;
+	
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+	
+	/**
+	 * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+	 * of values.
+	 */
+	var objToString = objectProto.toString;
+	
+	/** Used to detect if a method is native. */
+	var reIsNative = RegExp('^' +
+	  fnToString.call(hasOwnProperty).replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')
+	  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+	);
+	
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeIsArray = getNative(Array, 'isArray');
+	
+	/**
+	 * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
+	 * of an array-like value.
+	 */
+	var MAX_SAFE_INTEGER = 9007199254740991;
+	
+	/**
+	 * Gets the native function at `key` of `object`.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @param {string} key The key of the method to get.
+	 * @returns {*} Returns the function if it's native, else `undefined`.
+	 */
+	function getNative(object, key) {
+	  var value = object == null ? undefined : object[key];
+	  return isNative(value) ? value : undefined;
+	}
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * Checks if `value` is classified as an `Array` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isArray([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isArray(function() { return arguments; }());
+	 * // => false
+	 */
+	var isArray = nativeIsArray || function(value) {
+	  return isObjectLike(value) && isLength(value.length) && objToString.call(value) == arrayTag;
+	};
+	
+	/**
+	 * Checks if `value` is classified as a `Function` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isFunction(_);
+	 * // => true
+	 *
+	 * _.isFunction(/abc/);
+	 * // => false
+	 */
+	function isFunction(value) {
+	  // The use of `Object#toString` avoids issues with the `typeof` operator
+	  // in older versions of Chrome and Safari which return 'function' for regexes
+	  // and Safari 8 equivalents which return 'object' for typed array constructors.
+	  return isObject(value) && objToString.call(value) == funcTag;
+	}
+	
+	/**
+	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
+	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+	 * @example
+	 *
+	 * _.isObject({});
+	 * // => true
+	 *
+	 * _.isObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObject(1);
+	 * // => false
+	 */
+	function isObject(value) {
+	  // Avoid a V8 JIT bug in Chrome 19-20.
+	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+	  var type = typeof value;
+	  return !!value && (type == 'object' || type == 'function');
+	}
+	
+	/**
+	 * Checks if `value` is a native function.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
+	 * @example
+	 *
+	 * _.isNative(Array.prototype.push);
+	 * // => true
+	 *
+	 * _.isNative(_);
+	 * // => false
+	 */
+	function isNative(value) {
+	  if (value == null) {
+	    return false;
+	  }
+	  if (isFunction(value)) {
+	    return reIsNative.test(fnToString.call(value));
+	  }
+	  return isObjectLike(value) && reIsHostCtor.test(value);
+	}
+	
+	module.exports = isArray;
+
+
+/***/ },
+/* 263 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.1.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var bindCallback = __webpack_require__(264),
+	    isIterateeCall = __webpack_require__(265),
+	    restParam = __webpack_require__(266);
+	
+	/**
+	 * Creates a function that assigns properties of source object(s) to a given
+	 * destination object.
+	 *
+	 * **Note:** This function is used to create `_.assign`, `_.defaults`, and `_.merge`.
+	 *
+	 * @private
+	 * @param {Function} assigner The function to assign values.
+	 * @returns {Function} Returns the new assigner function.
+	 */
+	function createAssigner(assigner) {
+	  return restParam(function(object, sources) {
+	    var index = -1,
+	        length = object == null ? 0 : sources.length,
+	        customizer = length > 2 ? sources[length - 2] : undefined,
+	        guard = length > 2 ? sources[2] : undefined,
+	        thisArg = length > 1 ? sources[length - 1] : undefined;
+	
+	    if (typeof customizer == 'function') {
+	      customizer = bindCallback(customizer, thisArg, 5);
+	      length -= 2;
+	    } else {
+	      customizer = typeof thisArg == 'function' ? thisArg : undefined;
+	      length -= (customizer ? 1 : 0);
+	    }
+	    if (guard && isIterateeCall(sources[0], sources[1], guard)) {
+	      customizer = length < 3 ? undefined : customizer;
+	      length = 1;
+	    }
+	    while (++index < length) {
+	      var source = sources[index];
+	      if (source) {
+	        assigner(object, source, customizer);
+	      }
+	    }
+	    return object;
+	  });
+	}
+	
+	module.exports = createAssigner;
+
+
+/***/ },
+/* 264 */
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/**
+	 * A specialized version of `baseCallback` which only supports `this` binding
+	 * and specifying the number of arguments to provide to `func`.
+	 *
+	 * @private
+	 * @param {Function} func The function to bind.
+	 * @param {*} thisArg The `this` binding of `func`.
+	 * @param {number} [argCount] The number of arguments to provide to `func`.
+	 * @returns {Function} Returns the callback.
+	 */
+	function bindCallback(func, thisArg, argCount) {
+	  if (typeof func != 'function') {
+	    return identity;
+	  }
+	  if (thisArg === undefined) {
+	    return func;
+	  }
+	  switch (argCount) {
+	    case 1: return function(value) {
+	      return func.call(thisArg, value);
+	    };
+	    case 3: return function(value, index, collection) {
+	      return func.call(thisArg, value, index, collection);
+	    };
+	    case 4: return function(accumulator, value, index, collection) {
+	      return func.call(thisArg, accumulator, value, index, collection);
+	    };
+	    case 5: return function(value, other, key, object, source) {
+	      return func.call(thisArg, value, other, key, object, source);
+	    };
+	  }
+	  return function() {
+	    return func.apply(thisArg, arguments);
+	  };
+	}
+	
+	/**
+	 * This method returns the first argument provided to it.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Utility
+	 * @param {*} value Any value.
+	 * @returns {*} Returns `value`.
+	 * @example
+	 *
+	 * var object = { 'user': 'fred' };
+	 *
+	 * _.identity(object) === object;
+	 * // => true
+	 */
+	function identity(value) {
+	  return value;
+	}
+	
+	module.exports = bindCallback;
+
+
+/***/ },
+/* 265 */
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.0.9 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** Used to detect unsigned integer values. */
+	var reIsUint = /^\d+$/;
+	
+	/**
+	 * Used as the [maximum length](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
+	 * of an array-like value.
+	 */
+	var MAX_SAFE_INTEGER = 9007199254740991;
+	
+	/**
+	 * The base implementation of `_.property` without support for deep paths.
+	 *
+	 * @private
+	 * @param {string} key The key of the property to get.
+	 * @returns {Function} Returns the new function.
+	 */
+	function baseProperty(key) {
+	  return function(object) {
+	    return object == null ? undefined : object[key];
+	  };
+	}
+	
+	/**
+	 * Gets the "length" property value of `object`.
+	 *
+	 * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
+	 * that affects Safari on at least iOS 8.1-8.3 ARM64.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @returns {*} Returns the "length" value.
+	 */
+	var getLength = baseProperty('length');
+	
+	/**
+	 * Checks if `value` is array-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+	 */
+	function isArrayLike(value) {
+	  return value != null && isLength(getLength(value));
+	}
+	
+	/**
+	 * Checks if `value` is a valid array-like index.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+	 */
+	function isIndex(value, length) {
+	  value = (typeof value == 'number' || reIsUint.test(value)) ? +value : -1;
+	  length = length == null ? MAX_SAFE_INTEGER : length;
+	  return value > -1 && value % 1 == 0 && value < length;
+	}
+	
+	/**
+	 * Checks if the provided arguments are from an iteratee call.
+	 *
+	 * @private
+	 * @param {*} value The potential iteratee value argument.
+	 * @param {*} index The potential iteratee index or key argument.
+	 * @param {*} object The potential iteratee object argument.
+	 * @returns {boolean} Returns `true` if the arguments are from an iteratee call, else `false`.
+	 */
+	function isIterateeCall(value, index, object) {
+	  if (!isObject(object)) {
+	    return false;
+	  }
+	  var type = typeof index;
+	  if (type == 'number'
+	      ? (isArrayLike(object) && isIndex(index, object.length))
+	      : (type == 'string' && index in object)) {
+	    var other = object[index];
+	    return value === value ? (value === other) : (other !== other);
+	  }
+	  return false;
+	}
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on [`ToLength`](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength).
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
+	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+	 * @example
+	 *
+	 * _.isObject({});
+	 * // => true
+	 *
+	 * _.isObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObject(1);
+	 * // => false
+	 */
+	function isObject(value) {
+	  // Avoid a V8 JIT bug in Chrome 19-20.
+	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+	  var type = typeof value;
+	  return !!value && (type == 'object' || type == 'function');
+	}
+	
+	module.exports = isIterateeCall;
+
+
+/***/ },
+/* 266 */
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.6.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** Used as the `TypeError` message for "Functions" methods. */
+	var FUNC_ERROR_TEXT = 'Expected a function';
+	
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeMax = Math.max;
+	
+	/**
+	 * Creates a function that invokes `func` with the `this` binding of the
+	 * created function and arguments from `start` and beyond provided as an array.
+	 *
+	 * **Note:** This method is based on the [rest parameter](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/rest_parameters).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Function
+	 * @param {Function} func The function to apply a rest parameter to.
+	 * @param {number} [start=func.length-1] The start position of the rest parameter.
+	 * @returns {Function} Returns the new function.
+	 * @example
+	 *
+	 * var say = _.restParam(function(what, names) {
+	 *   return what + ' ' + _.initial(names).join(', ') +
+	 *     (_.size(names) > 1 ? ', & ' : '') + _.last(names);
+	 * });
+	 *
+	 * say('hello', 'fred', 'barney', 'pebbles');
+	 * // => 'hello fred, barney, & pebbles'
+	 */
+	function restParam(func, start) {
+	  if (typeof func != 'function') {
+	    throw new TypeError(FUNC_ERROR_TEXT);
+	  }
+	  start = nativeMax(start === undefined ? (func.length - 1) : (+start || 0), 0);
+	  return function() {
+	    var args = arguments,
+	        index = -1,
+	        length = nativeMax(args.length - start, 0),
+	        rest = Array(length);
+	
+	    while (++index < length) {
+	      rest[index] = args[start + index];
+	    }
+	    switch (start) {
+	      case 0: return func.call(this, rest);
+	      case 1: return func.call(this, args[0], rest);
+	      case 2: return func.call(this, args[0], args[1], rest);
+	    }
+	    var otherArgs = Array(start + 1);
+	    index = -1;
+	    while (++index < start) {
+	      otherArgs[index] = args[index];
+	    }
+	    otherArgs[start] = rest;
+	    return func.apply(this, otherArgs);
+	  };
+	}
+	
+	module.exports = restParam;
+
+
+/***/ },
+/* 267 */
+/***/ function(module, exports) {
+
+	var _element = typeof document !== 'undefined' ? document.body : null;
+	
+	function setElement(element) {
+	  if (typeof element === 'string') {
+	    var el = document.querySelectorAll(element);
+	    element = 'length' in el ? el[0] : el;
+	  }
+	  _element = element || _element;
+	}
+	
+	function hide(appElement) {
+	  validateElement(appElement);
+	  (appElement || _element).setAttribute('aria-hidden', 'true');
+	}
+	
+	function show(appElement) {
+	  validateElement(appElement);
+	  (appElement || _element).removeAttribute('aria-hidden');
+	}
+	
+	function toggle(shouldHide, appElement) {
+	  if (shouldHide)
+	    hide(appElement);
+	  else
+	    show(appElement);
+	}
+	
+	function validateElement(appElement) {
+	  if (!appElement && !_element)
+	    throw new Error('react-modal: You must set an element with `Modal.setAppElement(el)` to make this accessible');
+	}
+	
+	function resetForTesting() {
+	  _element = document.body;
+	}
+	
+	exports.toggle = toggle;
+	exports.setElement = setElement;
+	exports.show = show;
+	exports.hide = hide;
+	exports.resetForTesting = resetForTesting;
+
+
+/***/ },
+/* 268 */
+/***/ function(module, exports) {
+
+	module.exports = function(opts) {
+	  return new ElementClass(opts)
+	}
+	
+	function indexOf(arr, prop) {
+	  if (arr.indexOf) return arr.indexOf(prop)
+	  for (var i = 0, len = arr.length; i < len; i++)
+	    if (arr[i] === prop) return i
+	  return -1
+	}
+	
+	function ElementClass(opts) {
+	  if (!(this instanceof ElementClass)) return new ElementClass(opts)
+	  var self = this
+	  if (!opts) opts = {}
+	
+	  // similar doing instanceof HTMLElement but works in IE8
+	  if (opts.nodeType) opts = {el: opts}
+	
+	  this.opts = opts
+	  this.el = opts.el || document.body
+	  if (typeof this.el !== 'object') this.el = document.querySelector(this.el)
+	}
+	
+	ElementClass.prototype.add = function(className) {
+	  var el = this.el
+	  if (!el) return
+	  if (el.className === "") return el.className = className
+	  var classes = el.className.split(' ')
+	  if (indexOf(classes, className) > -1) return classes
+	  classes.push(className)
+	  el.className = classes.join(' ')
+	  return classes
+	}
+	
+	ElementClass.prototype.remove = function(className) {
+	  var el = this.el
+	  if (!el) return
+	  if (el.className === "") return
+	  var classes = el.className.split(' ')
+	  var idx = indexOf(classes, className)
+	  if (idx > -1) classes.splice(idx, 1)
+	  el.className = classes.join(' ')
+	  return classes
+	}
+	
+	ElementClass.prototype.has = function(className) {
+	  var el = this.el
+	  if (!el) return
+	  var classes = el.className.split(' ')
+	  return indexOf(classes, className) > -1
+	}
+	
+	ElementClass.prototype.toggle = function(className) {
+	  var el = this.el
+	  if (!el) return
+	  if (this.has(className)) this.remove(className)
+	  else this.add(className)
+	}
+
+
+/***/ },
+/* 269 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(1);
+	var ApiUtil = __webpack_require__(241);
+	var TimelineStore = __webpack_require__(270);
+	var TimelineIndexItem = __webpack_require__(272);
+	var PostForm = __webpack_require__(288);
 	
 	var TimelineIndex = React.createClass({
 	  displayName: 'TimelineIndex',
@@ -32907,15 +35121,18 @@
 	module.exports = TimelineIndex;
 
 /***/ },
-/* 249 */
+/* 270 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var Store = __webpack_require__(218).Store;
 	var AppDispatcher = __webpack_require__(236);
 	var TimelineConstants = __webpack_require__(240);
+	var LikeConstants = __webpack_require__(271);
 	var TimelineStore = new Store(AppDispatcher);
 	
 	var _timeline = [];
+	
+	var _likes = {};
 	
 	TimelineStore.__onDispatch = function (payload) {
 	  switch (payload.actionType) {
@@ -32923,22 +35140,63 @@
 	      resetTimeline(payload.timeline);
 	      break;
 	    case TimelineConstants.POST_DELETED:
-	
-	      var timeline = [];
-	      _timeline.forEach(function (el, idx) {
-	        if (el.id !== payload.post.id) {
-	          timeline.unshift(el);
-	        }
-	      });
-	      _timeline = timeline;
-	      TimelineStore.__emitChange();
-	
+	      removeTimelineItem(payload);
 	      break;
 	    case TimelineConstants.POST_CREATED:
-	      // addPost(payload.post)
-	      _timeline.unshift(payload.post);
-	      TimelineStore.__emitChange();
+	      addTimelineItem(payload);
 	      break;
+	    case LikeConstants.TIMELINE_LIKE_UPDATED:
+	      addTimelineLike(payload.data.like);
+	      break;
+	    case LikeConstants.TIMELINE_LIKE_DELETED:
+	      removeTimelineLike(payload.data.like);
+	      break;
+	  }
+	};
+	
+	addTimelineItem = function (payload) {
+	  _timeline.unshift(payload.post);
+	  TimelineStore.__emitChange();
+	};
+	
+	removeTimelineItem = function (payload) {
+	  var timeline = [];
+	  _timeline.forEach(function (el, idx) {
+	    if (el.id !== payload.post.id) {
+	      timeline.push(el);
+	    }
+	  });
+	  _timeline = timeline;
+	  TimelineStore.__emitChange();
+	};
+	
+	resetTimelineLikes = function () {
+	  _timeline.forEach(function (item) {
+	    _likes[item.id] = item.likes;
+	  });
+	  TimelineStore.__emitChange();
+	};
+	
+	addTimelineLike = function (like) {
+	  if (_likes[like.post_id] === undefined || _likes[like.post_id].length < 1) {
+	    _likes[like.post_id] = [like];
+	  } else {
+	    _likes[like.post_id] = _likes[like.post_id].push(like);
+	  }
+	  TimelineStore.__emitChange();
+	};
+	
+	removeTimelineLike = function (like) {
+	  var index = _likes[like.post_id].indexOf(like);
+	  _likes[like.post_id].splice(index, 1);
+	  TimelineStore.__emitChange();
+	};
+	
+	TimelineStore.fetchLikes = function (postId) {
+	  if (_likes[postId] !== undefined) {
+	    return _likes[postId];
+	  } else {
+	    return [];
 	  }
 	};
 	
@@ -32948,34 +35206,52 @@
 	    _timeline.splice(idx, 1);
 	    TimelineStore.__emitChange();
 	  }
+	  resetTimelineLikes();
 	};
 	
 	addPost = function (post) {
 	  _timeline.unshift(payload.post);
 	  TimelineStore.__emitChange();
+	  resetTimelineLikes();
 	};
 	
 	TimelineStore.timeline = function () {
-	  console.log(_timeline);
 	  return _timeline;
 	};
 	
 	resetTimeline = function (timeline) {
+	  console.log();
 	  _timeline = timeline;
-	  TimelineStore.__emitChange();
+	  resetTimelineLikes();
 	};
 	
 	module.exports = TimelineStore;
 
 /***/ },
-/* 250 */
+/* 271 */
+/***/ function(module, exports) {
+
+	module.exports = {
+	  LIKES_RECEIVED: "LIKES_RECEIVED",
+	  LIKE_DELETED: "LIKE_DELETED",
+	  LIKE_UPDATED: "LIKE_UPDATED",
+	  TIMELINE_LIKE_DELETED: "TIMELINE_LIKE_DELETED",
+	  TIMELINE_LIKE_UPDATED: "TIMELINE_LIKE_UPDATED"
+	};
+
+/***/ },
+/* 272 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
-	var PostStore = __webpack_require__(251);
+	var PostStore = __webpack_require__(273);
 	var ApiUtil = __webpack_require__(241);
-	var CommentIndex = __webpack_require__(253);
+	var CommentIndex = __webpack_require__(275);
 	var PhotoShow = __webpack_require__(244);
+	var LikeButtonTimeline = __webpack_require__(285);
+	var ShareModal = __webpack_require__(286);
+	var DeletePostModal = __webpack_require__(287);
+	var hashHistory = __webpack_require__(159).hashHistory;
 	
 	var PostIndexItem = React.createClass({
 	  displayName: 'PostIndexItem',
@@ -32992,33 +35268,19 @@
 	  },
 	
 	  compomentWillUnmount: function () {
-	    this.clearInterval(this.interval);
+	    clearInterval(this.interval);
 	  },
 	
-	  sharePost: function (event) {
+	  _onClick: function (event) {
 	    event.preventDefault();
-	
-	    var body = this.props.post.body;
-	    var currentUser = window.currentUserId;
-	    ApiUtil.sharePost({ body: body, author_id: currentUser });
-	  },
-	
-	  deletePost: function (event) {
-	    event.preventDefault();
-	
-	    var post = this.props.post;
-	    ApiUtil.deletePost(post);
+	    hashHistory.push("users/" + this.props.post.author_id);
 	  },
 	
 	  render: function () {
 	    return React.createElement(
 	      'div',
 	      null,
-	      React.createElement(
-	        'a',
-	        { onClick: this.deletePost },
-	        'delete'
-	      ),
+	      this.props.user.id === window.currentUserId ? React.createElement(DeletePostModal, { post: this.props.post }) : null,
 	      React.createElement(
 	        'li',
 	        { className: 'postandcommentwrapper' },
@@ -33041,7 +35303,7 @@
 	                ),
 	                React.createElement(
 	                  'div',
-	                  { className: 'postusername' },
+	                  { onClick: this._onClick, className: 'postusername' },
 	                  this.props.user.first_name,
 	                  ' ',
 	                  this.props.user.last_name
@@ -33067,22 +35329,9 @@
 	              { className: 'commentformwrapper' },
 	              React.createElement(
 	                'div',
-	                { clasName: 'postcommentform' },
-	                React.createElement(
-	                  'a',
-	                  null,
-	                  'Like'
-	                ),
-	                React.createElement(
-	                  'a',
-	                  null,
-	                  'Comment'
-	                ),
-	                React.createElement(
-	                  'a',
-	                  { onClick: this.sharePost },
-	                  'Share'
-	                )
+	                { className: 'postcommentform' },
+	                React.createElement(LikeButtonTimeline, { className: 'inline', post: this.props.post }),
+	                React.createElement(ShareModal, { post: this.props.post, current: window.currentUserId })
 	              )
 	            )
 	          )
@@ -33128,16 +35377,19 @@
 	module.exports = PostIndexItem;
 
 /***/ },
-/* 251 */
+/* 273 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var Store = __webpack_require__(218).Store;
 	var AppDispatcher = __webpack_require__(236);
-	var PostConstants = __webpack_require__(252);
+	var PostConstants = __webpack_require__(274);
+	var LikeConstants = __webpack_require__(271);
 	var PostStore = new Store(AppDispatcher);
 	
 	var _posts = [];
 	var _post = [];
+	
+	var _likes = {};
 	
 	PostStore.__onDispatch = function (payload) {
 	  switch (payload.actionType) {
@@ -33155,12 +35407,68 @@
 	      break;
 	    case PostConstants.POST_DELETED:
 	      removePost(payload.post);
+	      PostStore.__emitChange();
 	      break;
+	    case LikeConstants.LIKE_UPDATED:
+	      addLike(payload.data.like);
+	      break;
+	    case LikeConstants.LIKE_DELETED:
+	      removeLike(payload.data.like);
+	      break;
+	    case LikeConstants.COMMENT_CREATED:
+	      addLike(payload.like);
+	      break;
+	    case LikeConstants.COMMENT_DELETED:
+	      removeLike(payload.like);
+	      break;
+	  }
+	};
+	
+	resetLikes = function () {
+	  _posts.forEach(function (post) {
+	    _likes[post.id] = post.likes;
+	  });
+	};
+	
+	addLike = function (like) {
+	  if (_likes[like.post_id] === undefined || _likes[like.post_id].length < 1) {
+	    _likes[like.post_id] = [like];
+	  } else {
+	    _likes[like.post_id] = _likes[like.post_id].push(like);
+	  }
+	  PostStore.__emitChange();
+	};
+	
+	removeLike = function (like) {
+	  var index = _likes[like.post_id].indexOf(like);
+	  _likes[like.post_id].splice(index, 1);
+	  PostStore.__emitChange();
+	};
+	
+	PostStore.fetchLikes = function (postId) {
+	  if (_likes[postId] !== undefined) {
+	    return _likes[postId];
+	  } else {
+	    return [];
 	  }
 	};
 	
 	PostStore.all = function () {
 	  return _posts;
+	};
+	
+	PostStore.resetPosts = function () {
+	  resetPosts([]);
+	};
+	
+	PostStore.find = function (postId) {
+	  var foundPost;
+	  _posts.forEach(function (post) {
+	    if (post.id === postId) {
+	      foundPost = post;
+	    }
+	  });
+	  return foundPost;
 	};
 	
 	removePost = function (post) {
@@ -33179,27 +35487,18 @@
 	
 	resetPosts = function (posts) {
 	  _posts = posts;
-	  PostStore.__emitChange();
+	  resetLikes();
 	};
 	
 	resetPost = function (post) {
 	  _post = post;
-	};
-	
-	PostStore.find = function (postId) {
-	  var foundPost;
-	  _posts.forEach(function (post) {
-	    if (post.id === postId) {
-	      foundPost = post;
-	    }
-	  });
-	  return foundPost;
+	  resetLikes();
 	};
 	
 	module.exports = PostStore;
 
 /***/ },
-/* 252 */
+/* 274 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -33210,14 +35509,14 @@
 	};
 
 /***/ },
-/* 253 */
+/* 275 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
-	var CommentForm = __webpack_require__(254);
-	var CommentIndexItem = __webpack_require__(259);
+	var CommentForm = __webpack_require__(276);
+	var CommentIndexItem = __webpack_require__(281);
 	var ApiUtil = __webpack_require__(241);
-	var CommentStore = __webpack_require__(261);
+	var CommentStore = __webpack_require__(283);
 	
 	var CommentIndex = React.createClass({
 	  displayName: 'CommentIndex',
@@ -33252,7 +35551,6 @@
 	            React.createElement(
 	              'ul',
 	              { className: 'commentlist' },
-	              React.createElement('div', { className: 'commentexpandwrapper' }),
 	              this.state.comments.map(function (comment, idx) {
 	                return React.createElement(CommentIndexItem, { key: idx, comment: comment, post: this.props.post });
 	              }.bind(this))
@@ -33275,11 +35573,11 @@
 	module.exports = CommentIndex;
 
 /***/ },
-/* 254 */
+/* 276 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
-	var LinkedStateMixin = __webpack_require__(255);
+	var LinkedStateMixin = __webpack_require__(277);
 	var ApiUtil = __webpack_require__(241);
 	
 	var CommentForm = React.createClass({
@@ -33288,13 +35586,12 @@
 	  mixins: [LinkedStateMixin],
 	
 	  getInitialState: function () {
-	    return { author_id: window.currentUserId, body: '', post_id: this.props.post.id, reply_id: this.props.reply };
+	    return { body: '' };
 	  },
 	
 	  createComment: function (event) {
 	    event.preventDefault();
-	
-	    ApiUtil.createNewComment(this.state);
+	    ApiUtil.createNewComment({ author_id: window.currentUserId, body: this.state.body, post_id: this.props.post.id, reply_id: this.props.reply });
 	    this.setState({ body: '' });
 	  },
 	
@@ -33326,13 +35623,13 @@
 	module.exports = CommentForm;
 
 /***/ },
-/* 255 */
+/* 277 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(256);
+	module.exports = __webpack_require__(278);
 
 /***/ },
-/* 256 */
+/* 278 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -33349,8 +35646,8 @@
 	
 	'use strict';
 	
-	var ReactLink = __webpack_require__(257);
-	var ReactStateSetters = __webpack_require__(258);
+	var ReactLink = __webpack_require__(279);
+	var ReactStateSetters = __webpack_require__(280);
 	
 	/**
 	 * A simple mixin around ReactLink.forState().
@@ -33373,7 +35670,7 @@
 	module.exports = LinkedStateMixin;
 
 /***/ },
-/* 257 */
+/* 279 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -33447,7 +35744,7 @@
 	module.exports = ReactLink;
 
 /***/ },
-/* 258 */
+/* 280 */
 /***/ function(module, exports) {
 
 	/**
@@ -33556,14 +35853,15 @@
 	module.exports = ReactStateSetters;
 
 /***/ },
-/* 259 */
+/* 281 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
-	var CommentForm = __webpack_require__(254);
-	var ReplyIndex = __webpack_require__(260);
+	var CommentForm = __webpack_require__(276);
+	var ReplyIndex = __webpack_require__(282);
 	var ApiUtil = __webpack_require__(241);
 	var PhotoShow = __webpack_require__(244);
+	var hashHistory = __webpack_require__(159).hashHistory;
 	
 	var CommentIndexItem = React.createClass({
 	  displayName: 'CommentIndexItem',
@@ -33576,6 +35874,11 @@
 	    ApiUtil.deleteComment(comment);
 	  },
 	
+	  _onClick: function (event) {
+	    event.preventDefault();
+	    hashHistory.push("users/" + this.props.post.author_id);
+	  },
+	
 	  render: function () {
 	    var date = new Date(this.props.comment.created_at);
 	    date = 'posted: ' + date.getMonth() + '/' + date.getDate() + '/' + date.getFullYear();
@@ -33583,11 +35886,12 @@
 	    return React.createElement(
 	      'li',
 	      null,
-	      window.currentUserId === this.props.comment.author_id ? React.createElement(
-	        'a',
-	        { onClick: this.deleteComment },
-	        'delete'
-	      ) : null,
+	      React.createElement(
+	        'div',
+	        { className: 'commentexpandwrapper' },
+	        this.props.comment.user.id === window.currentUserId ? React.createElement('a', { className: 'delete comment clicktext', onClick: this.deleteComment }) : null
+	      ),
+	      React.createElement(PhotoShow, { url: this.props.comment.user.prof_url, type: 'profile_pic comment_pic' }),
 	      React.createElement(
 	        'div',
 	        { className: 'indcommentwrapper' },
@@ -33603,7 +35907,7 @@
 	              { className: 'commentauthorwrapper' },
 	              React.createElement(
 	                'span',
-	                { className: 'commentauthor' },
+	                { onClick: this._onClick, className: 'commentauthor' },
 	                username
 	              )
 	            ),
@@ -33649,7 +35953,7 @@
 	module.exports = CommentIndexItem;
 
 /***/ },
-/* 260 */
+/* 282 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
@@ -33668,12 +35972,12 @@
 	module.exports = ReplyIndex;
 
 /***/ },
-/* 261 */
+/* 283 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var Store = __webpack_require__(218).Store;
 	var AppDispatcher = __webpack_require__(236);
-	var CommentConstants = __webpack_require__(262);
+	var CommentConstants = __webpack_require__(284);
 	var CommentStore = new Store(AppDispatcher);
 	
 	var _comments = [];
@@ -33754,7 +36058,7 @@
 	module.exports = CommentStore;
 
 /***/ },
-/* 262 */
+/* 284 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -33765,14 +36069,292 @@
 	};
 
 /***/ },
-/* 263 */
+/* 285 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
-	var LinkedStateMixin = __webpack_require__(255);
+	var ApiUtil = __webpack_require__(241);
+	var TimelineStore = __webpack_require__(270);
+	
+	var LikeButton = React.createClass({
+	  displayName: 'LikeButton',
+	
+	  getInitialState: function () {
+	    return { likes: TimelineStore.fetchLikes(this.props.post.id) };
+	  },
+	
+	  componentDidMount: function () {
+	    this.listener = TimelineStore.addListener(this._onChange);
+	  },
+	
+	  componentWillUnmount: function () {
+	    this.listener.remove();
+	  },
+	
+	  _onChange: function () {
+	    this.setState({ likes: TimelineStore.fetchLikes(this.props.post.id) });
+	  },
+	
+	  handleClick: function (event) {
+	    var likeStatus = this.haveLiked();
+	    event.preventDefault();
+	    if (likeStatus !== false) {
+	      ApiUtil.deleteTimelineLike(this.props.post.id, likeStatus.id);
+	    } else {
+	      ApiUtil.createTimelineLike(this.props.post.id);
+	    }
+	  },
+	
+	  haveLiked: function () {
+	    var ans = false;
+	    this.state.likes.forEach(function (like) {
+	      if (like.author_id == window.currentUserId) {
+	        ans = like;
+	      }
+	    });
+	    return ans;
+	  },
+	
+	  render: function () {
+	    var text = this.haveLiked() === false ? "Like" : "Unlike";
+	    var num = this.state.likes.length > 0 ? this.state.likes.length + " Like" : null;
+	    this.state.likes.length > 1 ? num += 's ' : null;
+	    return React.createElement(
+	      'div',
+	      { className: 'likewrapper' },
+	      num,
+	      ' ',
+	      React.createElement(
+	        'a',
+	        { className: 'clickable', onClick: this.handleClick },
+	        text
+	      )
+	    );
+	  }
+	
+	});
+	
+	module.exports = LikeButton;
+
+/***/ },
+/* 286 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(1);
+	var Modal = __webpack_require__(249);
+	var ApiUtil = __webpack_require__(241);
+	
+	const customStyles = {
+	  overlay: {
+	    position: 'fixed',
+	    top: 0,
+	    left: 0,
+	    right: 0,
+	    bottom: 0,
+	    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+	    zIndex: 10
+	  },
+	  content: {
+	    top: '50%',
+	    left: '50%',
+	    right: 'auto',
+	    bottom: 'auto',
+	    marginRight: '-50%',
+	    background: "#fff",
+	    transform: 'translate(-50%, -50%)',
+	    padding: 10,
+	    border: 0
+	  }
+	};
+	
+	var ShareModal = React.createClass({
+	  displayName: 'ShareModal',
+	
+	
+	  getInitialState: function () {
+	    return {
+	      modalIsOpen: false
+	    };
+	  },
+	
+	  openModal: function () {
+	    this.setState({ modalIsOpen: true });
+	  },
+	
+	  closeModal: function () {
+	    this.setState({ modalIsOpen: false });
+	  },
+	
+	  sharePost: function (event) {
+	    event.preventDefault();
+	    var body = this.props.post.body;
+	    var currentUser = this.props.current;
+	    ApiUtil.sharePost({ body: body, author_id: currentUser, target_id: currentUser }, currentUser);
+	    this.closeModal();
+	  },
+	
+	  display: function () {
+	    return React.createElement(
+	      Modal,
+	      {
+	        isOpen: this.state.modalIsOpen,
+	        onRequestClose: this.closeModal,
+	        style: customStyles },
+	      React.createElement(
+	        'div',
+	        { className: 'postcommentwrapper' },
+	        React.createElement(
+	          'div',
+	          null,
+	          'would you like to share this post?'
+	        ),
+	        React.createElement(
+	          'div',
+	          { className: 'commentformwrapper' },
+	          React.createElement(
+	            'a',
+	            { className: 'postbutton', onClick: this.sharePost },
+	            'yes'
+	          ),
+	          React.createElement(
+	            'a',
+	            { className: 'postbutton', onClick: this.closeModal },
+	            'no'
+	          )
+	        )
+	      )
+	    );
+	  },
+	
+	  render: function () {
+	    return React.createElement(
+	      'div',
+	      { className: 'inline' },
+	      React.createElement(
+	        'a',
+	        { className: 'clickable', onClick: this.openModal },
+	        'Share'
+	      ),
+	      this.display()
+	    );
+	  }
+	
+	});
+	
+	module.exports = ShareModal;
+
+/***/ },
+/* 287 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(1);
+	var Modal = __webpack_require__(249);
+	var ApiUtil = __webpack_require__(241);
+	
+	const customStyles = {
+	  overlay: {
+	    position: 'fixed',
+	    top: 0,
+	    left: 0,
+	    right: 0,
+	    bottom: 0,
+	    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+	    zIndex: 10
+	  },
+	  content: {
+	    top: '50%',
+	    left: '50%',
+	    right: 'auto',
+	    bottom: 'auto',
+	    marginRight: '-50%',
+	    background: "#fff",
+	    transform: 'translate(-50%, -50%)',
+	    padding: 10,
+	    border: 0
+	  }
+	};
+	
+	var DeletePostModal = React.createClass({
+	  displayName: 'DeletePostModal',
+	
+	
+	  getInitialState: function () {
+	    return {
+	      modalIsOpen: false
+	    };
+	  },
+	
+	  openModal: function () {
+	    this.setState({ modalIsOpen: true });
+	  },
+	
+	  closeModal: function () {
+	    this.setState({ modalIsOpen: false });
+	  },
+	
+	  deletePost: function (event) {
+	    event.preventDefault();
+	
+	    var post = this.props.post;
+	    ApiUtil.deletePost(post);
+	    this.closeModal();
+	  },
+	
+	  display: function () {
+	    return React.createElement(
+	      Modal,
+	      {
+	        isOpen: this.state.modalIsOpen,
+	        onRequestClose: this.closeModal,
+	        style: customStyles },
+	      React.createElement(
+	        'div',
+	        { className: 'postcommentwrapper' },
+	        React.createElement(
+	          'div',
+	          null,
+	          'would you like to delete this post?'
+	        ),
+	        React.createElement(
+	          'div',
+	          { className: 'commentformwrapper' },
+	          React.createElement(
+	            'a',
+	            { className: 'postbutton', onClick: this.deletePost },
+	            'yes'
+	          ),
+	          React.createElement(
+	            'a',
+	            { className: 'postbutton', onClick: this.closeModal },
+	            'no'
+	          )
+	        )
+	      )
+	    );
+	  },
+	
+	  render: function () {
+	    return React.createElement(
+	      'div',
+	      null,
+	      React.createElement('a', { className: 'delete clicktext', onClick: this.openModal }),
+	      this.display()
+	    );
+	  }
+	
+	});
+	
+	module.exports = DeletePostModal;
+
+/***/ },
+/* 288 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(1);
+	var LinkedStateMixin = __webpack_require__(277);
 	var ApiUtil = __webpack_require__(241);
 	var PhotoShow = __webpack_require__(244);
-	var TextArea = __webpack_require__(264);
+	var TextArea = __webpack_require__(289);
 	var UserStore = __webpack_require__(217);
 	
 	var PostForm = React.createClass({
@@ -33784,8 +36366,20 @@
 	    return {
 	      author: UserStore.find(window.currentUserId),
 	      body: '',
-	      target_id: this.props.params === undefined ? window.currentUserId : this.props.params.user_id
+	      target_id: this.props.targetId === undefined ? window.currentUserId : this.props.targetId
 	    };
+	  },
+	
+	  componentDidMount: function () {
+	    this.listener = UserStore.addListener(this._onChange);
+	  },
+	
+	  componentWillUnmount: function () {
+	    this.listener.remove();
+	  },
+	
+	  _onChange: function () {
+	    this.setState({ author: UserStore.find(window.currentUserId) });
 	  },
 	
 	  createPost: function (event) {
@@ -33824,7 +36418,7 @@
 	          React.createElement(
 	            'div',
 	            { className: 'profilepicwrapperform' },
-	            React.createElement(PhotoShow, { url: this.state.author.prof_url, type: 'profile_pic' })
+	            this.state.author !== undefined ? React.createElement(PhotoShow, { url: this.state.author.prof_url, type: 'profile_pic' }) : null
 	          ),
 	          React.createElement(
 	            'div',
@@ -33868,7 +36462,7 @@
 	module.exports = PostForm;
 
 /***/ },
-/* 264 */
+/* 289 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -33899,7 +36493,7 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _calculateNodeHeight = __webpack_require__(265);
+	var _calculateNodeHeight = __webpack_require__(290);
 	
 	var _calculateNodeHeight2 = _interopRequireDefault(_calculateNodeHeight);
 	
@@ -34155,7 +36749,7 @@
 
 
 /***/ },
-/* 265 */
+/* 290 */
 /***/ function(module, exports) {
 
 	/**
@@ -34273,12 +36867,12 @@
 
 
 /***/ },
-/* 266 */
+/* 291 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
-	var SearchBar = __webpack_require__(267);
-	var NavButtons = __webpack_require__(268);
+	var SearchBar = __webpack_require__(292);
+	var NavButtons = __webpack_require__(297);
 	
 	var Header = React.createClass({
 	  displayName: 'Header',
@@ -34325,30 +36919,54 @@
 	module.exports = Header;
 
 /***/ },
-/* 267 */
+/* 292 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
 	var ApiUtil = __webpack_require__(241);
-	var UserStore = __webpack_require__(217);
-	var LinkedStateMixin = __webpack_require__(255);
+	var SearchStore = __webpack_require__(293);
+	var SearchIndex = __webpack_require__(295);
+	var LinkedStateMixin = __webpack_require__(277);
 	
 	var SearchBar = React.createClass({
 	  displayName: 'SearchBar',
 	
 	
-	  getInitialState: function () {
-	    return { search: '' };
-	  },
+	  mixins: [LinkedStateMixin],
 	
-	  componentDidUpdate: function () {
-	    if (this.state.partial) {
-	      ApiUtil.executeSearch(this.state.partial);
-	    }
+	  getInitialState: function () {
+	    return {
+	      search: '',
+	      show: false,
+	      results: SearchStore.searchResults()
+	    };
 	  },
 	
 	  runSearch: function (event) {
 	    event.preventDefault();
+	    if (this.state.search !== '') {
+	      this.setState({ show: true });
+	      var terms = '%' + this.state.search + '%';
+	      ApiUtil.executeSearch(terms);
+	    } else {
+	      this.setState({ show: false });
+	    }
+	  },
+	
+	  componentWillReceiveProps: function (newProps) {
+	    this.setState({ search: '', show: false });
+	  },
+	
+	  componentDidMount: function () {
+	    this.listener = SearchStore.addListener(this._onChange);
+	  },
+	
+	  componentWillUnmount: function () {
+	    this.listener.remove();
+	  },
+	
+	  _onChange: function () {
+	    this.setState({ results: SearchStore.searchResults() });
 	  },
 	
 	  render: function () {
@@ -34360,15 +36978,16 @@
 	        { className: 'searchpos' },
 	        React.createElement(
 	          'form',
-	          { className: 'searchform', onSubmit: this.runSearch },
+	          { className: 'searchform', onSubmit: this.redirectSearch },
 	          React.createElement(
 	            'button',
 	            { className: 'searchbutton', type: 'submit' },
 	            React.createElement('i', { className: 'searchbuttonimage' })
 	          ),
-	          React.createElement('input', { valueLink: "search", type: 'textarea', className: 'searchinput' })
+	          React.createElement('input', { onKeyUp: this.runSearch, valueLink: this.linkState("search"), type: 'textarea', className: 'searchinput' })
 	        )
-	      )
+	      ),
+	      this.state.show ? React.createElement(SearchIndex, { results: this.state.results }) : null
 	    );
 	  }
 	
@@ -34377,13 +36996,133 @@
 	module.exports = SearchBar;
 
 /***/ },
-/* 268 */
+/* 293 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Store = __webpack_require__(218).Store;
+	var AppDispatcher = __webpack_require__(236);
+	var SearchConstants = __webpack_require__(294);
+	
+	var SearchStore = new Store(AppDispatcher);
+	var _searchResults = [];
+	
+	SearchStore.__onDispatch = function (payload) {
+	  switch (payload.actionType) {
+	    case SearchConstants.RESULTS_RECEIVED:
+	      _resetSearch(payload.results);
+	      break;
+	  }
+	};
+	_resetSearch = function (results) {
+	  _searchResults = results;
+	  SearchStore.__emitChange();
+	};
+	
+	SearchStore.searchResults = function () {
+	  return _searchResults.slice();
+	};
+	
+	module.exports = SearchStore;
+
+/***/ },
+/* 294 */
+/***/ function(module, exports) {
+
+	module.exports = {
+	  RESULTS_RECEIVED: "RESULTS_RECEIVED"
+	};
+
+/***/ },
+/* 295 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(1);
+	var ApiUtil = __webpack_require__(241);
+	var SearchIndexItem = __webpack_require__(296);
+	
+	var SearchIndex = React.createClass({
+	  displayName: 'SearchIndex',
+	
+	
+	  render: function () {
+	    return React.createElement(
+	      'ul',
+	      { className: 'friendul' },
+	      this.props.results.map(function (user, idx) {
+	        return React.createElement(SearchIndexItem, { key: idx, user: user });
+	      }.bind(this))
+	    );
+	  }
+	});
+	
+	module.exports = SearchIndex;
+
+/***/ },
+/* 296 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(1);
+	var PhotoShow = __webpack_require__(244);
+	var hashHistory = __webpack_require__(159).hashHistory;
+	var ApiUtil = __webpack_require__(241);
+	
+	var SearchIndexItem = React.createClass({
+	  displayName: 'SearchIndexItem',
+	
+	
+	  _onClick: function (event) {
+	    event.preventDefault();
+	    hashHistory.push("users/" + this.props.user.id + "/timeline");
+	  },
+	
+	  render: function () {
+	    return React.createElement(
+	      'div',
+	      { className: 'requestitemwrapper' },
+	      React.createElement(
+	        'li',
+	        null,
+	        React.createElement(
+	          'div',
+	          { className: 'postwrapper' },
+	          React.createElement(
+	            'div',
+	            { clasName: 'postcontent' },
+	            React.createElement(
+	              'div',
+	              { className: 'posterinfo' },
+	              React.createElement(
+	                'div',
+	                { className: 'profilepicwrapper' },
+	                React.createElement(PhotoShow, { url: this.props.user.prof_url, type: 'profile_pic' })
+	              ),
+	              React.createElement(
+	                'div',
+	                { onClick: this._onClick, className: 'postusername', id: 'requestname' },
+	                this.props.user.first_name,
+	                ' ',
+	                this.props.user.last_name
+	              )
+	            )
+	          )
+	        )
+	      )
+	    );
+	  }
+	
+	});
+	
+	module.exports = SearchIndexItem;
+
+/***/ },
+/* 297 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
 	var hashHistory = __webpack_require__(159).hashHistory;
 	var UserStore = __webpack_require__(217);
 	var ApiUtil = __webpack_require__(241);
+	var RequestIndex = __webpack_require__(298);
 	
 	var NavButtons = React.createClass({
 	  displayName: 'NavButtons',
@@ -34435,19 +37174,15 @@
 	        { className: 'notificationswrapper' },
 	        React.createElement(
 	          'div',
-	          { className: 'adjustprofilebutton' },
-	          React.createElement(
-	            'ul',
-	            { className: 'navbutton clickable' },
-	            'friend requests'
-	          )
+	          { className: 'adjustprofilebutton', id: 'friendreq' },
+	          React.createElement(RequestIndex, null)
 	        ),
 	        React.createElement(
 	          'div',
 	          { className: 'adjustprofilebutton' },
 	          React.createElement(
 	            'ul',
-	            { className: 'navbutton clickable' },
+	            { className: 'navbutton' },
 	            'messsages'
 	          )
 	        ),
@@ -34456,30 +37191,8 @@
 	          { className: 'adjustprofilebutton' },
 	          React.createElement(
 	            'ul',
-	            { className: 'navbutton clickable' },
+	            { className: 'navbutton' },
 	            'notifications'
-	          )
-	        )
-	      ),
-	      React.createElement(
-	        'div',
-	        { className: 'settingswrapper' },
-	        React.createElement(
-	          'div',
-	          { className: 'adjustprofilebutton' },
-	          React.createElement(
-	            'ul',
-	            { className: 'navbutton clickable' },
-	            'privacy shortcuts'
-	          )
-	        ),
-	        React.createElement(
-	          'div',
-	          { className: 'adjustprofilebutton' },
-	          React.createElement(
-	            'ul',
-	            { className: 'navbutton clickable' },
-	            'settings'
 	          )
 	        )
 	      ),
@@ -34500,14 +37213,305 @@
 	module.exports = NavButtons;
 
 /***/ },
-/* 269 */
+/* 298 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
 	var ApiUtil = __webpack_require__(241);
-	var PostStore = __webpack_require__(251);
-	var PostIndexItem = __webpack_require__(270);
-	var PostForm = __webpack_require__(263);
+	var FriendStore = __webpack_require__(299);
+	var RequestIndexItem = __webpack_require__(301);
+	
+	var Requests = React.createClass({
+	  displayName: 'Requests',
+	
+	  getInitialState: function () {
+	    return { requests: FriendStore.allRequests(), showRequests: false };
+	  },
+	
+	  componentDidMount: function () {
+	    ApiUtil.fetchAllRequests(window.currentUserId);
+	    this.listener = FriendStore.addListener(this._onChange);
+	  },
+	
+	  componentWillUnmount: function () {
+	    this.listener.remove();
+	  },
+	
+	  _onChange: function () {
+	    this.setState({ requests: FriendStore.allRequests() });
+	  },
+	
+	  _onClick: function () {
+	    this.setState({ showRequests: !this.state.showRequests });
+	  },
+	
+	  render: function () {
+	    var index = this.state.requests.map(function (request, idx) {
+	      if (request !== null && request.user !== null) {
+	        return React.createElement(RequestIndexItem, { key: idx, request: request.user });
+	      }
+	    }.bind(this));
+	
+	    index = index.length < 1 ? [React.createElement(
+	      'div',
+	      { className: 'requestitemwrapper' },
+	      React.createElement(
+	        'li',
+	        null,
+	        React.createElement(
+	          'div',
+	          { className: 'postwrapper' },
+	          React.createElement(
+	            'div',
+	            { clasName: 'postcontent' },
+	            React.createElement(
+	              'div',
+	              { onClick: this._onClick, className: 'postusername', id: 'requestname' },
+	              'You have no friend requests'
+	            )
+	          )
+	        )
+	      )
+	    )] : index;
+	
+	    return React.createElement(
+	      'div',
+	      null,
+	      React.createElement(
+	        'div',
+	        { onClick: this._onClick, className: 'navbutton clickable' },
+	        'friend requests '
+	      ),
+	      this.state.showRequests ? React.createElement(
+	        'ul',
+	        { className: 'requestindex' },
+	        index
+	      ) : null
+	    );
+	  }
+	
+	});
+	
+	module.exports = Requests;
+
+/***/ },
+/* 299 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Store = __webpack_require__(218).Store;
+	var AppDispatcher = __webpack_require__(236);
+	var FriendConstants = __webpack_require__(300);
+	var FriendStore = new Store(AppDispatcher);
+	
+	var _friends = [];
+	var _friend = [];
+	
+	var _requests = [];
+	
+	FriendStore.__onDispatch = function (payload) {
+	  switch (payload.actionType) {
+	    case FriendConstants.REQUESTS_RECEIVED:
+	      resetRequests(payload.requests);
+	      FriendStore.__emitChange();
+	      break;
+	    case FriendConstants.FRIENDS_RECEIVED:
+	      resetFriends(payload.friends);
+	      FriendStore.__emitChange();
+	      break;
+	    case FriendConstants.REMOVE_FRIEND:
+	      removeFriend(payload.friendship);
+	      removeRequest(payload.friendship);
+	      FriendStore.__emitChange();
+	      break;
+	    case FriendConstants.FRIENDSHIP_APPROVED:
+	      resetFriends(payload.friends);
+	      resetRequests(payload.requests);
+	      FriendStore.__emitChange();
+	      break;
+	  }
+	};
+	
+	resetFriends = function (friends) {
+	  _friends = friends;
+	};
+	
+	removeFriend = function (friend) {
+	  var friends = [];
+	  _friends.forEach(function (el, idx) {
+	    if (el.id !== friend.friendship.user_id && el.id !== friend.friendship.user_id) {
+	      friends.push(el);
+	    }
+	  });
+	  resetFriends(friends);
+	};
+	
+	removeRequest = function (friend) {
+	  var requests = [];
+	  _requests.forEach(function (el, idx) {
+	    if (el.user.id !== friend.friendship.friend_id) {
+	      requests.push(el);
+	    }
+	  });
+	  resetRequests(requests);
+	};
+	
+	addFriend = function (friend) {
+	  _friends = [friend].concat(_friends);
+	};
+	
+	resetRequests = function (requests) {
+	  _requests = requests;
+	};
+	
+	FriendStore.allRequests = function () {
+	  return _requests;
+	};
+	
+	FriendStore.allFriends = function () {
+	  return _friends;
+	};
+	
+	FriendStore.topNine = function () {
+	  return _friends.slice(0, 9);
+	};
+	
+	FriendStore.areFriends = function (friendId) {
+	  var rf = false;
+	  _friends.forEach(function (friend, idx) {
+	    if (friend.id === parseInt(friendId)) {
+	      rf = true;
+	    }
+	  });
+	  return rf;
+	};
+	
+	FriendStore.find = function (friendId) {
+	  var foundFriend;
+	  _friends.forEach(function (friend) {
+	    if (friend.id === friendId) {
+	      foundFriend = friend;
+	    }
+	  });
+	  return foundFriend;
+	};
+	
+	module.exports = FriendStore;
+
+/***/ },
+/* 300 */
+/***/ function(module, exports) {
+
+	module.exports = {
+	  FRIEND_RECEIVED: "FRIEND_RECEIVED",
+	  FRIENDS_RECEIVED: "FRIENDS_RECEIVED",
+	  FRIEND_CREATED: "FRIEND_CREATED",
+	  FRIEND_DELETED: "FRIEND_DELETED",
+	  REMOVE_FRIEND: "REMOVE_FRIEND",
+	
+	  REQUESTS_RECEIVED: "REQUESTS_RECEIVED",
+	  FRIENDSHIP_APPROVED: "FRIENDSHIP_APPROVED"
+	};
+
+/***/ },
+/* 301 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(1);
+	var FriendStore = __webpack_require__(299);
+	var PhotoShow = __webpack_require__(244);
+	var hashHistory = __webpack_require__(159).hashHistory;
+	var ApiUtil = __webpack_require__(241);
+	
+	var RequestIndexItem = React.createClass({
+	  displayName: 'RequestIndexItem',
+	
+	
+	  _onClick: function (event) {
+	    event.preventDefault();
+	    hashHistory.push("users/" + this.props.request.id + "/timeline");
+	  },
+	
+	  acceptRequest: function (event) {
+	    event.preventDefault();
+	    ApiUtil.approveFriendRequest(this.props.request.id);
+	  },
+	
+	  denyRequest: function (event) {
+	    event.preventDefault();
+	    ApiUtil.removeFriend(this.props.request.id);
+	  },
+	
+	  render: function () {
+	    return React.createElement(
+	      'div',
+	      { className: 'requestitemwrapper' },
+	      React.createElement(
+	        'li',
+	        null,
+	        React.createElement(
+	          'div',
+	          { className: 'postwrapper' },
+	          React.createElement(
+	            'div',
+	            { clasName: 'postcontent' },
+	            React.createElement(
+	              'div',
+	              { className: 'posterinfo' },
+	              React.createElement(
+	                'div',
+	                { className: 'profilepicwrapper' },
+	                React.createElement(PhotoShow, { url: this.props.request.prof_url, type: 'profile_pic' })
+	              ),
+	              React.createElement(
+	                'div',
+	                { onClick: this._onClick, className: 'postusername', id: 'requestname' },
+	                this.props.request.first_name,
+	                ' ',
+	                this.props.request.last_name
+	              ),
+	              React.createElement(
+	                'div',
+	                { className: 'requestbuttonwrapper' },
+	                React.createElement(
+	                  'button',
+	                  { onClick: this.acceptRequest, className: 'requestbutton' },
+	                  'accept'
+	                )
+	              ),
+	              React.createElement(
+	                'div',
+	                { className: 'requestbuttonwrapper' },
+	                React.createElement(
+	                  'button',
+	                  { onClick: this.denyRequest, className: 'requestbutton' },
+	                  'deny'
+	                )
+	              )
+	            )
+	          )
+	        )
+	      )
+	    );
+	  }
+	
+	});
+	
+	module.exports = RequestIndexItem;
+
+/***/ },
+/* 302 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(1);
+	var ApiUtil = __webpack_require__(241);
+	var PostStore = __webpack_require__(273);
+	var PostIndexItem = __webpack_require__(303);
+	var PostForm = __webpack_require__(288);
+	
+	var PhotoIndexTop = __webpack_require__(305);
+	var FriendsIndexTop = __webpack_require__(306);
+	
+	var hashHistory = __webpack_require__(159).hashHistory;
 	
 	var PostIndex = React.createClass({
 	  displayName: 'PostIndex',
@@ -34519,6 +37523,7 @@
 	
 	  componentDidMount: function () {
 	    this.listener = PostStore.addListener(this._onChange);
+	    PostStore.resetPosts();
 	    ApiUtil.fetchAllPosts(this.props.params.user_id);
 	  },
 	
@@ -34530,24 +37535,66 @@
 	    this.setState({ posts: PostStore.all() });
 	  },
 	
+	  redirectPhotos: function (event) {
+	    event.preventDefault();
+	    hashHistory.push("users/" + this.props.params.user_id + "/photos");
+	  },
+	
+	  redirectFriends: function (event) {
+	    event.preventDefault();
+	    hashHistory.push("users/" + this.props.params.user_id + "/friends");
+	  },
+	
 	  render: function () {
 	    return React.createElement(
 	      'div',
-	      { id: 'rightmain' },
-	      React.createElement('div', { id: 'rightcol' }),
+	      { className: 'userinfocont' },
 	      React.createElement(
 	        'div',
-	        { id: 'content' },
-	        React.createElement(PostForm, { user: this.props.user }),
+	        { className: 'leftcolpostindex' },
+	        React.createElement(
+	          'ul',
+	          null,
+	          React.createElement(
+	            'li',
+	            { className: 'postindexphotowrapper' },
+	            React.createElement(
+	              'div',
+	              { onClick: this.redirectPhotos, className: 'photoindexlabel' },
+	              'Photos'
+	            ),
+	            React.createElement(PhotoIndexTop, { currentProfileId: this.props.params.user_id })
+	          ),
+	          React.createElement(
+	            'li',
+	            { className: 'postindexphotowrapper' },
+	            React.createElement(
+	              'div',
+	              { onClick: this.redirectFriends, className: 'photoindexlabel' },
+	              'Friends'
+	            ),
+	            React.createElement(FriendsIndexTop, { currentProfileId: this.props.params.user_id })
+	          ),
+	          React.createElement('li', null)
+	        )
+	      ),
+	      React.createElement(
+	        'div',
+	        { className: 'postindexrightmain' },
 	        React.createElement(
 	          'div',
-	          { className: 'postindexwrapper' },
+	          { id: 'content' },
+	          React.createElement(PostForm, { targetId: this.props.params.user_id }),
 	          React.createElement(
-	            'ul',
-	            null,
-	            this.state.posts.map(function (post, idx) {
-	              return React.createElement(PostIndexItem, { key: idx, post: post, user: post.user });
-	            }.bind(this))
+	            'div',
+	            { className: 'postindexwrapper' },
+	            React.createElement(
+	              'ul',
+	              null,
+	              this.state.posts.map(function (post, idx) {
+	                return React.createElement(PostIndexItem, { key: idx, post: post, user: post.user, currentPage: this.props.params.user_id });
+	              }.bind(this))
+	            )
 	          )
 	        )
 	      )
@@ -34559,14 +37606,18 @@
 	module.exports = PostIndex;
 
 /***/ },
-/* 270 */
+/* 303 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
-	var PostStore = __webpack_require__(251);
+	var PostStore = __webpack_require__(273);
 	var ApiUtil = __webpack_require__(241);
-	var CommentIndex = __webpack_require__(253);
+	var CommentIndex = __webpack_require__(275);
 	var PhotoShow = __webpack_require__(244);
+	var LikeButton = __webpack_require__(304);
+	var ShareModal = __webpack_require__(286);
+	var DeletePostModal = __webpack_require__(287);
+	var hashHistory = __webpack_require__(159).hashHistory;
 	
 	var PostIndexItem = React.createClass({
 	  displayName: 'PostIndexItem',
@@ -34582,37 +37633,27 @@
 	    }.bind(that), 360000);
 	  },
 	
+	  compomentWillRecieveProps: function (newProps) {
+	    clearInterval(this.interval);
+	  },
+	
 	  compomentWillUnmount: function () {
-	    this.clearInterval(this.interval);
+	    clearInterval(this.interval);
 	  },
 	
-	  sharePost: function (event) {
+	  _onClick: function (event) {
 	    event.preventDefault();
-	
-	    var body = this.props.post.body;
-	    var currentUser = window.currentUserId;
-	    ApiUtil.sharePost({ body: body, author_id: currentUser });
-	  },
-	
-	  deletePost: function (event) {
-	    event.preventDefault();
-	
-	    var post = this.props.post;
-	    ApiUtil.deletePost(post);
+	    hashHistory.push("users/" + this.props.post.author_id);
 	  },
 	
 	  render: function () {
 	    return React.createElement(
 	      'div',
 	      null,
-	      this.props.user.id === this.props.post.author_id ? React.createElement(
-	        'a',
-	        { onClick: this.deletePost },
-	        'delete'
-	      ) : null,
 	      React.createElement(
 	        'li',
 	        { className: 'postandcommentwrapper' },
+	        this.props.user.id === window.currentUserId ? React.createElement(DeletePostModal, { post: this.props.post }) : null,
 	        React.createElement(
 	          'div',
 	          { className: 'indpostwrapper' },
@@ -34632,7 +37673,7 @@
 	                ),
 	                React.createElement(
 	                  'div',
-	                  { className: 'postusername' },
+	                  { onClick: this._onClick, className: 'postusername' },
 	                  this.props.user.first_name,
 	                  ' ',
 	                  this.props.user.last_name
@@ -34659,26 +37700,13 @@
 	              React.createElement(
 	                'div',
 	                { clasName: 'postcommentform' },
-	                React.createElement(
-	                  'a',
-	                  null,
-	                  'Like'
-	                ),
-	                React.createElement(
-	                  'a',
-	                  null,
-	                  'Comment'
-	                ),
-	                React.createElement(
-	                  'a',
-	                  { onClick: this.sharePost },
-	                  'Share'
-	                )
+	                React.createElement(LikeButton, { likeType: 'post', post: this.props.post }),
+	                React.createElement(ShareModal, { post: this.props.post, current: this.props.currentPage })
 	              )
 	            )
 	          )
 	        ),
-	        React.createElement(CommentIndex, { post: this.props.post, comments: this.props.post.comments })
+	        React.createElement(CommentIndex, { key: this.props.key, post: this.props.post, comments: this.props.post.comments })
 	      ),
 	      React.createElement('div', { className: 'breakdiv' })
 	    );
@@ -34719,46 +37747,423 @@
 	module.exports = PostIndexItem;
 
 /***/ },
-/* 271 */
+/* 304 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(1);
+	var ApiUtil = __webpack_require__(241);
+	var PostStore = __webpack_require__(273);
+	
+	var LikeButton = React.createClass({
+	  displayName: 'LikeButton',
+	
+	  getInitialState: function () {
+	    return { likes: PostStore.fetchLikes(this.props.post.id) };
+	  },
+	
+	  componentDidMount: function () {
+	    this.listener = PostStore.addListener(this._onChange);
+	  },
+	
+	  componentWillUnmount: function () {
+	    this.listener.remove();
+	  },
+	
+	  _onChange: function () {
+	    this.setState({ likes: PostStore.fetchLikes(this.props.post.id) });
+	  },
+	
+	  handleClick: function (event) {
+	    var likeStatus = this.haveLiked();
+	    event.preventDefault();
+	    if (likeStatus !== false) {
+	      ApiUtil.deleteLike(this.props.post.id, likeStatus.id);
+	    } else {
+	      ApiUtil.createLike(this.props.post.id);
+	    }
+	  },
+	
+	  haveLiked: function () {
+	    var ans = false;
+	    this.state.likes.forEach(function (like) {
+	      if (like.author_id == window.currentUserId) {
+	        ans = like;
+	      }
+	    });
+	    return ans;
+	  },
+	
+	  render: function () {
+	    var text = this.haveLiked() === false ? "Like" : "Unlike";
+	    var num = this.state.likes.length > 0 ? this.state.likes.length + " Like" : null;
+	    this.state.likes.length > 1 ? num += 's ' : null;
+	    return React.createElement(
+	      'div',
+	      { className: 'likewrapper' },
+	      num,
+	      ' ',
+	      React.createElement(
+	        'a',
+	        { className: 'clickable', onClick: this.handleClick },
+	        text
+	      )
+	    );
+	  }
+	
+	});
+	
+	module.exports = LikeButton;
+
+/***/ },
+/* 305 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(1);
+	var PhotoForm = __webpack_require__(245);
+	var PhotoShow = __webpack_require__(244);
+	var PhotoStore = __webpack_require__(246);
+	var ApiUtil = __webpack_require__(241);
+	
+	var PhotoIndexTop = React.createClass({
+	  displayName: 'PhotoIndexTop',
+	
+	  getInitialState: function () {
+	    return { photos: PhotoStore.topNine() };
+	  },
+	  componentDidMount: function () {
+	    ApiUtil.fetchUserPhotos(this.props.currentProfileId);
+	    this.listener = PhotoStore.addListener(this._onChange);
+	  },
+	
+	  componentWillReceiveProps: function (newProps) {
+	    ApiUtil.fetchUserPhotos(newProps.currentProfileId);
+	  },
+	
+	  componentWillUnmount: function () {
+	    this.listener.remove();
+	  },
+	
+	  _onChange: function () {
+	    this.setState({ photos: PhotoStore.topNine() });
+	  },
+	
+	  render: function () {
+	    return React.createElement(
+	      'div',
+	      null,
+	      React.createElement(
+	        'ul',
+	        null,
+	        this.state.photos.map(function (photo, idx) {
+	          {
+	            var thing = photo.albumphoto !== undefined ? React.createElement(PhotoShow, {
+	              key: idx,
+	              id: photo.albumphoto.id,
+	              url: photo.albumphoto.url,
+	              user: photo.albumphoto.user_id,
+	              type: 'albumphoto' }) : null;
+	          }
+	          return thing;
+	        }.bind(this))
+	      )
+	    );
+	  }
+	
+	});
+	
+	module.exports = PhotoIndexTop;
+
+/***/ },
+/* 306 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(1);
+	var ApiUtil = __webpack_require__(241);
+	var FriendStore = __webpack_require__(299);
+	var FriendIndexTopItem = __webpack_require__(307);
+	var PhotoShow = __webpack_require__(244);
+	
+	var FriendsIndexTop = React.createClass({
+	  displayName: 'FriendsIndexTop',
+	
+	
+	  getInitialState: function () {
+	    return { friends: FriendStore.topNine() };
+	  },
+	
+	  componentDidMount: function () {
+	    this.listener = FriendStore.addListener(this._onChange);
+	    ApiUtil.fetchAllFriends(this.props.currentProfileId);
+	  },
+	
+	  componentWillUnmount: function () {
+	    this.listener.remove();
+	  },
+	
+	  _onChange: function () {
+	    this.setState({ friends: FriendStore.topNine() });
+	  },
+	
+	  render: function () {
+	
+	    return React.createElement(
+	      'div',
+	      null,
+	      React.createElement(
+	        'ul',
+	        null,
+	        this.state.friends.map(function (friend, idx) {
+	          return React.createElement(FriendIndexTopItem, { key: idx, friend: friend });
+	        }.bind(this))
+	      )
+	    );
+	  }
+	});
+	
+	module.exports = FriendsIndexTop;
+
+/***/ },
+/* 307 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(1);
+	var FriendStore = __webpack_require__(299);
+	var ApiUtil = __webpack_require__(241);
+	var PhotoShow = __webpack_require__(244);
+	var hashHistory = __webpack_require__(159).hashHistory;
+	var UserStore = __webpack_require__(217);
+	
+	var FriendIndexTopItem = React.createClass({
+	  displayName: 'FriendIndexTopItem',
+	
+	  getInitialState: function () {
+	    return { friend: this.props.friend };
+	  },
+	
+	  redirectToProfile: function (event) {
+	    event.preventDefault();
+	    hashHistory.push('users/' + this.props.friend.id);
+	  },
+	
+	  render: function () {
+	    return React.createElement(
+	      'div',
+	      { className: 'inline', onClick: this.redirectToProfile },
+	      React.createElement(PhotoShow, { url: this.props.friend.prof_url, type: 'albumphoto' })
+	    );
+	  }
+	
+	});
+	
+	module.exports = FriendIndexTopItem;
+
+/***/ },
+/* 308 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(1);
+	var PhotoForm = __webpack_require__(245);
+	var PhotoShow = __webpack_require__(244);
+	var PhotoStore = __webpack_require__(246);
+	var ApiUtil = __webpack_require__(241);
+	var PhotoEnlargeModal = __webpack_require__(309);
+	
+	var PhotoIndex = React.createClass({
+	  displayName: 'PhotoIndex',
+	
+	  getInitialState: function () {
+	    return { photos: PhotoStore.all() };
+	  },
+	  componentDidMount: function () {
+	    ApiUtil.fetchUserPhotos(this.props.params.user_id);
+	    this.listener = PhotoStore.addListener(this._onChange);
+	  },
+	
+	  componentWillUnmount: function () {
+	    this.listener.remove();
+	  },
+	
+	  _onChange: function () {
+	    this.setState({ photos: PhotoStore.all() });
+	  },
+	
+	  render: function () {
+	    return React.createElement(
+	      'div',
+	      { className: 'photowrapper' },
+	      React.createElement(
+	        'div',
+	        { className: 'photoindexheading' },
+	        window.currentUserId == this.props.params.user_id ? React.createElement(PhotoForm, { photoType: 'albumphoto' }) : null
+	      ),
+	      React.createElement(
+	        'ul',
+	        null,
+	        this.state.photos.map(function (photo, idx) {
+	          {
+	            var thing = photo.albumphoto !== undefined ? React.createElement(PhotoEnlargeModal, {
+	              id: photo.albumphoto.id,
+	              user: photo.albumphoto.user_id,
+	              url: photo.albumphoto.url,
+	              key: idx,
+	              type: 'medalbumphoto' }) : null;
+	          }
+	          return thing;
+	        }.bind(this))
+	      )
+	    );
+	  }
+	
+	});
+	
+	module.exports = PhotoIndex;
+
+/***/ },
+/* 309 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(1);
+	var Modal = __webpack_require__(249);
+	var PhotoShow = __webpack_require__(244);
+	
+	const customStyles = {
+	  overlay: {
+	    position: 'fixed',
+	    top: 0,
+	    left: 0,
+	    right: 0,
+	    bottom: 0,
+	    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+	    zIndex: 10
+	  },
+	  content: {
+	    top: '50%',
+	    left: '50%',
+	    right: 'auto',
+	    bottom: 'auto',
+	    marginRight: '-50%',
+	    background: "#fff",
+	    transform: 'translate(-50%, -50%)',
+	    padding: 10,
+	    border: 0
+	  }
+	};
+	
+	var PhotoEnlargeModal = React.createClass({
+	  displayName: 'PhotoEnlargeModal',
+	
+	
+	  getInitialState: function () {
+	    return {
+	      modalIsOpen: false
+	    };
+	  },
+	
+	  openModal: function () {
+	    this.setState({ modalIsOpen: true });
+	  },
+	
+	  closeModal: function () {
+	    this.setState({ modalIsOpen: false });
+	  },
+	
+	  display: function () {
+	    return React.createElement(
+	      Modal,
+	      {
+	        isOpen: this.state.modalIsOpen,
+	        onRequestClose: this.closeModal,
+	        style: customStyles },
+	      React.createElement(
+	        'div',
+	        { className: 'postcommentwrapper' },
+	        React.createElement(
+	          'div',
+	          { className: 'commentformwrapper' },
+	          React.createElement(
+	            'a',
+	            { className: 'postbutton', onClick: this.closeModal },
+	            'X'
+	          )
+	        ),
+	        React.createElement(
+	          'div',
+	          null,
+	          React.createElement(PhotoShow, {
+	            id: this.props.id,
+	            user: this.props.user,
+	            url: this.props.url,
+	            type: 'enlargephoto' })
+	        )
+	      )
+	    );
+	  },
+	
+	  render: function () {
+	    return React.createElement(
+	      'div',
+	      { onClick: this.openModal, className: 'inline' },
+	      React.createElement(PhotoShow, {
+	        id: this.props.id,
+	        user: this.props.user,
+	        url: this.props.url,
+	        type: 'medalbumphoto' }),
+	      this.display()
+	    );
+	  }
+	
+	});
+	
+	module.exports = PhotoEnlargeModal;
+
+/***/ },
+/* 310 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
 	var UserStore = __webpack_require__(217);
 	var ApiUtil = __webpack_require__(241);
-	var PostForm = __webpack_require__(263);
-	var PostIndex = __webpack_require__(269);
+	var PostForm = __webpack_require__(288);
+	var PostIndex = __webpack_require__(302);
+	
 	var PhotoShow = __webpack_require__(244);
 	var PhotoForm = __webpack_require__(245);
-	var About = __webpack_require__(272);
+	
+	var PostStore = __webpack_require__(273);
+	
+	var About = __webpack_require__(311);
 	var hashHistory = __webpack_require__(159).hashHistory;
-	var FriendsIndex = __webpack_require__(273);
-	var FriendStore = __webpack_require__(274);
-	var FriendButton = __webpack_require__(277);
+	var FriendsIndex = __webpack_require__(312);
+	var FriendStore = __webpack_require__(299);
+	var FriendButton = __webpack_require__(314);
 	
 	var UserSettings = React.createClass({
 	  displayName: 'UserSettings',
 	
 	  getInitialState: function () {
-	    return { user: UserStore.find(this.props.params.user_id),
-	      areFriends: FriendStore.areFriends(this.props.params.user_id) };
+	    return { user: UserStore.displayedUser() };
 	  },
 	
 	  _onChange: function () {
-	    this.setState({ areFriends: FriendStore.areFriends(this.props.params.user_id) });
+	    this.setState({ user: UserStore.displayedUser() });
 	  },
 	
 	  componentDidMount: function () {
+	    ApiUtil.fetchSingleUser(this.props.params.user_id);
 	    this.friendListener = FriendStore.addListener(this._onChange);
+	    this.listener = UserStore.addListener(this._onChange);
 	  },
 	
 	  componentWillReceiveProps: function (newProps) {
-	    ApiUtil.fetchAllFriends(window.currentUserId);
-	    this.setState({ user: UserStore.find(newProps.params.user_id),
-	      areFriends: FriendStore.areFriends(this.props.params.user_id) });
+	    ApiUtil.fetchSingleUser(this.props.params.user_id);
+	    ApiUtil.fetchAllFriends(newProps.params.user_id);
+	    ApiUtil.fetchAllPosts(newProps.params.user_id);
+	    this.setState({ user: UserStore.displayedUser() });
 	  },
 	
 	  componentWillUnmount: function () {
 	    this.friendListener.remove();
+	    this.listener.remove();
 	  },
 	
 	  redirectPostIndex: function (event) {
@@ -34776,6 +38181,11 @@
 	    hashHistory.push("users/" + this.props.params.user_id + "/friends");
 	  },
 	
+	  redirectPhotos: function (event) {
+	    event.preventDefault();
+	    hashHistory.push("users/" + this.props.params.user_id + "/photos");
+	  },
+	
 	  render: function () {
 	    if (this.state.user !== undefined) {
 	      return React.createElement(
@@ -34790,7 +38200,7 @@
 	            React.createElement(
 	              'div',
 	              { className: 'profilepicmain' },
-	              React.createElement(PhotoShow, { url: this.state.user.prof_url, type: 'profile_pic' })
+	              React.createElement(PhotoShow, { clickAction: this.redirectPhotos, url: this.state.user.prof_url, type: 'profile_pic' })
 	            ),
 	            React.createElement(
 	              'div',
@@ -34811,7 +38221,7 @@
 	              'div',
 	              { className: 'settingheaderbanner' },
 	              React.createElement(FriendButton, { currentProfileId: this.props.params.user_id }),
-	              React.createElement(PhotoShow, { url: this.state.user.banner_url, type: 'banner_pic' })
+	              React.createElement(PhotoShow, { clickAction: this.redirectFriendsIndex, url: this.state.user.banner_url, type: 'banner_pic' })
 	            ),
 	            React.createElement(
 	              'div',
@@ -34838,7 +38248,7 @@
 	                    React.createElement('span', { className: 'rightbotomimagewrap' }),
 	                    React.createElement(
 	                      'div',
-	                      { onClick: this.redirectPostIndex },
+	                      { className: 'clickable', onClick: this.redirectPostIndex },
 	                      'Timeline'
 	                    )
 	                  )
@@ -34857,7 +38267,7 @@
 	                    React.createElement('span', { className: 'rightbotomimagewrap' }),
 	                    React.createElement(
 	                      'div',
-	                      { onClick: this.redirectAbout },
+	                      { className: 'clickable', onClick: this.redirectAbout },
 	                      'About'
 	                    )
 	                  )
@@ -34876,22 +38286,35 @@
 	                    React.createElement('span', { className: 'rightbotomimagewrap' }),
 	                    React.createElement(
 	                      'div',
-	                      { onClick: this.redirectFriendsIndex },
+	                      { className: 'clickable', onClick: this.redirectFriendsIndex },
 	                      'Friends'
+	                    )
+	                  )
+	                ),
+	                React.createElement(
+	                  'div',
+	                  { className: 'settingnavbottomwrapper' },
+	                  React.createElement(
+	                    'div',
+	                    { className: 'rightbottomcontentwrapper' },
+	                    React.createElement('a', { className: 'photos' })
+	                  ),
+	                  React.createElement(
+	                    'a',
+	                    { title: 'photos' },
+	                    React.createElement('span', { className: 'rightbotomimagewrap' }),
+	                    React.createElement(
+	                      'div',
+	                      { className: 'clickable', onClick: this.redirectPhotos },
+	                      'Photos'
 	                    )
 	                  )
 	                )
 	              )
 	            )
-	          )
-	        ),
-	        React.createElement(
-	          'div',
-	          { id: 'leftmain' },
-	          React.createElement('div', { className: 'photowrapper' }),
-	          React.createElement('div', { className: 'friendswrapper' })
-	        ),
-	        this.props.children
+	          ),
+	          this.props.children
+	        )
 	      );
 	    } else {
 	      return React.createElement('div', null);
@@ -34903,44 +38326,231 @@
 	module.exports = UserSettings;
 
 /***/ },
-/* 272 */
+/* 311 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
+	var UserStore = __webpack_require__(217);
+	var ApiUtil = __webpack_require__(241);
+	var LinkedStateMixin = __webpack_require__(277);
+	var TextArea = __webpack_require__(289);
 	
 	var About = React.createClass({
-	  displayName: "About",
+	  displayName: 'About',
 	
+	
+	  mixins: [LinkedStateMixin],
+	
+	  getInitialState: function () {
+	    var userAbout = UserStore.displayedUser();
+	    return {
+	      user: userAbout,
+	      edit: false,
+	      lives: userAbout.lives,
+	      education: userAbout.education,
+	      work: userAbout.works,
+	      about: userAbout.about
+	    };
+	  },
+	
+	  componentDidMount: function () {
+	    this.listener = UserStore.addListener(this._onChange);
+	    ApiUtil.fetchSingleUser(this.props.params.user_id);
+	  },
+	
+	  componentWillUnmount: function () {
+	    this.listener.remove();
+	  },
+	
+	  _onChange: function () {
+	    var userAbout = UserStore.displayedUser();
+	    this.setState({ user: userAbout,
+	      lives: userAbout.lives,
+	      education: userAbout.education,
+	      work: userAbout.work,
+	      about: userAbout.about
+	    });
+	  },
+	
+	  updateInfo: function (event) {
+	    event.preventDefault();
+	    ApiUtil.updateUser(window.currentUserId, this.state);
+	    this.setState({
+	      edit: false
+	    });
+	  },
+	
+	  displayEdit: function (event) {
+	    event.preventDefault();
+	    this.setState({ edit: true });
+	  },
 	
 	  render: function () {
-	    return React.createElement(
-	      "div",
-	      { id: "rightmain" },
-	      React.createElement("div", { id: "rightcol" }),
-	      React.createElement(
-	        "div",
-	        { id: "content" },
+	    if (this.state.user !== undefined && !this.state.edit) {
+	      return React.createElement(
+	        'div',
+	        { id: 'aboutconwrap' },
 	        React.createElement(
-	          "div",
-	          null,
-	          "About"
+	          'div',
+	          { id: 'rightcol' },
+	          this.state.user.id === window.currentUserId ? React.createElement(
+	            'a',
+	            { className: 'clicktext', onClick: this.displayEdit },
+	            'Edit'
+	          ) : null
+	        ),
+	        React.createElement(
+	          'div',
+	          { id: 'aboutfieldcon' },
+	          React.createElement(
+	            'form',
+	            { id: 'aboutpostform', className: 'postform', onSubmit: this.updateInfo },
+	            React.createElement(
+	              'div',
+	              { className: 'midpostform' },
+	              React.createElement(
+	                'div',
+	                { className: 'postarea' },
+	                'Lives:',
+	                React.createElement(
+	                  'div',
+	                  { className: 'inputwrapper' },
+	                  this.state.user.lives
+	                )
+	              ),
+	              React.createElement(
+	                'div',
+	                { className: 'postarea' },
+	                'Education:',
+	                React.createElement(
+	                  'div',
+	                  { className: 'inputwrapper' },
+	                  this.state.user.education
+	                )
+	              ),
+	              React.createElement(
+	                'div',
+	                { className: 'postarea' },
+	                'Works:',
+	                React.createElement(
+	                  'div',
+	                  { className: 'inputwrapper' },
+	                  this.state.user.work
+	                )
+	              ),
+	              React.createElement(
+	                'div',
+	                { className: 'postarea' },
+	                'About:',
+	                React.createElement(
+	                  'div',
+	                  { className: 'inputwrapper' },
+	                  this.state.user.about
+	                )
+	              )
+	            )
+	          )
 	        )
-	      )
-	    );
+	      );
+	    } else if (this.state.user !== undefined && this.state.edit) {
+	      return React.createElement(
+	        'div',
+	        { id: 'aboutconwrap' },
+	        React.createElement('div', { id: 'rightcol' }),
+	        React.createElement(
+	          'div',
+	          { id: 'aboutfieldcon' },
+	          React.createElement(
+	            'form',
+	            { id: 'aboutpostform', className: 'postform', onSubmit: this.updateInfo },
+	            React.createElement(
+	              'div',
+	              { className: 'midpostform' },
+	              React.createElement(
+	                'div',
+	                { className: 'postarea' },
+	                'Lives:',
+	                React.createElement(
+	                  'div',
+	                  { className: 'inputwrapper' },
+	                  React.createElement(TextArea, {
+	                    valueLink: this.linkState("lives")
+	                  })
+	                )
+	              ),
+	              React.createElement(
+	                'div',
+	                { className: 'postarea' },
+	                'Education:',
+	                React.createElement(
+	                  'div',
+	                  { className: 'inputwrapper' },
+	                  React.createElement(TextArea, {
+	                    valueLink: this.linkState("education")
+	                  })
+	                )
+	              ),
+	              React.createElement(
+	                'div',
+	                { className: 'postarea' },
+	                'Works:',
+	                React.createElement(
+	                  'div',
+	                  { className: 'inputwrapper' },
+	                  React.createElement(TextArea, {
+	                    valueLink: this.linkState("work")
+	                  })
+	                )
+	              ),
+	              React.createElement(
+	                'div',
+	                { className: 'postarea' },
+	                'About:',
+	                React.createElement(
+	                  'div',
+	                  { className: 'inputwrapper' },
+	                  React.createElement(TextArea, {
+	                    valueLink: this.linkState("about")
+	                  })
+	                )
+	              )
+	            ),
+	            React.createElement(
+	              'div',
+	              { className: 'bottompostform' },
+	              React.createElement(
+	                'div',
+	                { className: 'bpostright' },
+	                React.createElement(
+	                  'div',
+	                  { className: 'postactionwrapper' },
+	                  React.createElement(
+	                    'button',
+	                    { className: 'postbutton' },
+	                    'Update'
+	                  )
+	                )
+	              )
+	            )
+	          )
+	        )
+	      );
+	    } else {
+	      return React.createElement('div', null);
+	    }
 	  }
-	
 	});
 	
 	module.exports = About;
 
 /***/ },
-/* 273 */
+/* 312 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
 	var ApiUtil = __webpack_require__(241);
-	var FriendStore = __webpack_require__(274);
-	var FriendIndexItem = __webpack_require__(276);
+	var FriendStore = __webpack_require__(299);
+	var FriendIndexItem = __webpack_require__(313);
 	
 	var FriendsIndex = React.createClass({
 	  displayName: 'FriendsIndex',
@@ -34968,25 +38578,13 @@
 	  },
 	
 	  render: function () {
+	
 	    return React.createElement(
-	      'div',
-	      { id: 'rightmain friend' },
-	      React.createElement('div', { id: 'rightcol' }),
-	      React.createElement(
-	        'div',
-	        { id: 'content friend' },
-	        React.createElement(
-	          'div',
-	          { className: 'friendindexwrapper' },
-	          React.createElement(
-	            'ul',
-	            { className: 'friendul' },
-	            this.state.friends.map(function (friend, idx) {
-	              return React.createElement(FriendIndexItem, { key: idx, friend: friend, user: this.props.user });
-	            }.bind(this))
-	          )
-	        )
-	      )
+	      'ul',
+	      { className: 'friendul' },
+	      this.state.friends.map(function (friend, idx) {
+	        return React.createElement(FriendIndexItem, { key: idx, friend: friend, user: this.props.user });
+	      }.bind(this))
 	    );
 	  }
 	});
@@ -34994,101 +38592,11 @@
 	module.exports = FriendsIndex;
 
 /***/ },
-/* 274 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var Store = __webpack_require__(218).Store;
-	var AppDispatcher = __webpack_require__(236);
-	var FriendConstants = __webpack_require__(275);
-	var FriendStore = new Store(AppDispatcher);
-	
-	var _friends = [];
-	var _friend = [];
-	var _request = [];
-	var _request = [];
-	
-	FriendStore.__onDispatch = function (payload) {
-	  switch (payload.actionType) {
-	    case FriendConstants.FRIENDS_RECEIVED:
-	      resetFriends(payload.friends);
-	      break;
-	    case FriendConstants.REMOVE_FRIEND:
-	      console.log(payload);
-	      resetFriends(payload.friends);
-	      break;
-	  }
-	};
-	
-	resetFriends = function (friends) {
-	  _friends = friends;
-	  FriendStore.__emitChange();
-	};
-	
-	removeFriend = function (friend) {
-	  var friends = [];
-	  _friends.forEach(function (el, idx) {
-	    if (el.id !== friend.id) {
-	      friends.push(el);
-	    }
-	  });
-	  resetFriends(friends);
-	};
-	
-	FriendStore.allFriends = function () {
-	  return _friends;
-	};
-	
-	FriendStore.areFriends = function (friendId) {
-	  var rf = false;
-	  _friends.forEach(function (friend, idx) {
-	    if (friend.id === parseInt(friendId)) {
-	      rf = true;
-	    }
-	  });
-	  console.log(rf);
-	  return rf;
-	};
-	
-	addFriend = function (friend) {
-	  _friends = [friend].concat(_friends);
-	  FriendStore.__emitChange();
-	};
-	
-	resetFriends = function (friends) {
-	  _friends = friends;
-	  FriendStore.__emitChange();
-	};
-	
-	FriendStore.find = function (friendId) {
-	  var foundFriend;
-	  _friends.forEach(function (friend) {
-	    if (friend.id === friendId) {
-	      foundFriend = friend;
-	    }
-	  });
-	  return foundFriend;
-	};
-	
-	module.exports = FriendStore;
-
-/***/ },
-/* 275 */
-/***/ function(module, exports) {
-
-	module.exports = {
-	  FRIEND_RECEIVED: "FRIEND_RECEIVED",
-	  FRIENDS_RECEIVED: "FRIENDS_RECEIVED",
-	  FRIEND_CREATED: "FRIEND_CREATED",
-	  FRIEND_DELETED: "FRIEND_DELETED",
-	  REMOVE_FRIEND: "REMOVE_FRIEND"
-	};
-
-/***/ },
-/* 276 */
+/* 313 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
-	var FriendStore = __webpack_require__(274);
+	var FriendStore = __webpack_require__(299);
 	var ApiUtil = __webpack_require__(241);
 	var PhotoShow = __webpack_require__(244);
 	var hashHistory = __webpack_require__(159).hashHistory;
@@ -35128,11 +38636,11 @@
 	                React.createElement(
 	                  'div',
 	                  { className: 'friends profilepicwrapper' },
-	                  React.createElement(PhotoShow, { url: this.state.friend.prof_url, type: 'profile_pic' })
+	                  React.createElement(PhotoShow, { clickAction: this.redirectToProfile, url: this.state.friend.prof_url, type: 'profile_pic' })
 	                ),
 	                React.createElement(
 	                  'div',
-	                  { className: 'friendusername', onClick: this.redirectToProfile },
+	                  { className: 'friendusername clicktext', onClick: this.redirectToProfile },
 	                  this.state.friend.name
 	                )
 	              ),
@@ -35153,27 +38661,29 @@
 	module.exports = FriendIndexItem;
 
 /***/ },
-/* 277 */
+/* 314 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
 	var ApiUtil = __webpack_require__(241);
-	var FriendStore = __webpack_require__(274);
+	var FriendStore = __webpack_require__(299);
 	
 	var FriendButton = React.createClass({
 	  displayName: 'FriendButton',
 	
 	
 	  getInitialState: function () {
-	    return { areFriends: FriendStore.areFriends(this.props.currentProfileId) };
+	    return { areFriends: FriendStore.areFriends(window.currentUserId) };
 	  },
 	
 	  _onChange: function () {
-	    this.setState({ areFriends: FriendStore.areFriends(this.props.currentProfileId) });
+	    this.setState({ areFriends: FriendStore.areFriends(window.currentUserId) });
 	  },
+	
 	  componentDidMount: function () {
 	    this.friendListener = FriendStore.addListener(this._onChange);
 	  },
+	
 	  componentWillUnmount: function () {
 	    this.friendListener.remove();
 	  },
@@ -35227,12 +38737,6 @@
 	});
 	
 	module.exports = FriendButton;
-
-/***/ },
-/* 278 */
-/***/ function(module, exports) {
-
-
 
 /***/ }
 /******/ ]);

@@ -13,8 +13,20 @@ var PostForm = React.createClass({
     return {
       author: UserStore.find(window.currentUserId),
       body: '',
-      target_id: (this.props.params === undefined ? window.currentUserId : this.props.params.user_id)
+      target_id: (this.props.targetId === undefined ? window.currentUserId : this.props.targetId)
     }
+  },
+
+  componentDidMount : function () {
+    this.listener = UserStore.addListener(this._onChange)
+  },
+
+  componentWillUnmount : function () {
+    this.listener.remove()
+  },
+
+  _onChange : function () {
+    this.setState({author: UserStore.find(window.currentUserId)})
   },
 
   createPost: function (event) {
@@ -49,7 +61,7 @@ var PostForm = React.createClass({
 
           <div className="midpostform">
             <div className="profilepicwrapperform">
-              <PhotoShow url={this.state.author.prof_url} type="profile_pic"/>
+              {this.state.author !== undefined ? <PhotoShow url={this.state.author.prof_url} type="profile_pic"/> : null }
             </div>
 
             <div className="postarea">

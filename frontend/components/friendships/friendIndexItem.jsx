@@ -26,10 +26,10 @@ var FriendIndexItem = React.createClass({
 
                 <div className="frienderinfo">
                   <div className="friends profilepicwrapper">
-                    <PhotoShow url={this.state.friend.prof_url} type="profile_pic"/>
+                    <PhotoShow clickAction={this.redirectToProfile} url={this.state.friend.prof_url} type="profile_pic"/>
                   </div>
 
-                  <div className="friendusername" onClick={this.redirectToProfile}>
+                  <div className="friendusername clicktext" onClick={this.redirectToProfile}>
                     {this.state.friend.name}
                   </div>
                 </div>

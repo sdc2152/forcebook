@@ -3,6 +3,8 @@ var CommentForm = require('./commentForm');
 var ReplyIndex = require('./replyIndex');
 var ApiUtil = require('../../util/apiUtil');
 var PhotoShow = require('../photos/photoShow');
+var hashHistory = require('react-router').hashHistory;
+
 
 
 var CommentIndexItem = React.createClass({
@@ -15,6 +17,10 @@ var CommentIndexItem = React.createClass({
     ApiUtil.deleteComment(comment)
   },
 
+  _onClick: function(event) {
+    event.preventDefault()
+    hashHistory.push("users/" + this.props.post.author_id)
+  },
 
   render: function() {
     var date = new Date(this.props.comment.created_at)
@@ -22,7 +28,10 @@ var CommentIndexItem = React.createClass({
     var username = this.props.comment.user.first_name + " " + this.props.comment.user.last_name
     return (
       <li>
-        {window.currentUserId === this.props.comment.author_id ? <a onClick={this.deleteComment}>delete</a> : null }
+        <div className="commentexpandwrapper">
+          {this.props.comment.user.id === window.currentUserId ? <a className="delete comment clicktext" onClick={this.deleteComment}></a> : null }
+        </div>
+        <PhotoShow url={this.props.comment.user.prof_url} type="profile_pic comment_pic"/>
         <div className="indcommentwrapper">
           <div className="commentcontent">
             <div className="commenthide">
@@ -32,7 +41,7 @@ var CommentIndexItem = React.createClass({
 
             <div className="commentbodywrapper">
               <div className="commentauthorwrapper">
-                <span className="commentauthor">
+                <span onClick={this._onClick} className="commentauthor">
                   {username}
                 </span>
               </div>

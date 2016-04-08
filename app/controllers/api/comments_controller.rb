@@ -2,7 +2,7 @@ class Api::CommentsController < ApplicationController
 
   def index
     if params[:user_id]
-      @comments = Comment.includes(:author, :post, :replies).where(author_id: params[:user_id]).order(created_at: :desc)
+      @comments = Comment.includes(:author, :post, :replies, :likers).where(author_id: params[:user_id]).order(created_at: :desc)
     else
       @comments = Comment.includes(:author, :post, :replies).all
     end

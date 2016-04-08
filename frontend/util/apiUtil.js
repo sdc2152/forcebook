@@ -35,6 +35,23 @@ module.exports = {
     })
   },
 
+  updateUser: function(userId, params) {
+    $.ajax({
+      type: "PATCH",
+      url: "api/users/" + userId,
+      data: {
+        userId: userId,
+        work: params.work,
+        education: params.education,
+        lives: params.lives,
+        about: params.about
+      },
+      success: function (user) {
+        ApiActions.receiveSingleUser(user);
+      }
+    })
+  },
+
   fetchAllPosts: function (userId) {
     $.ajax({
       url: "api/users/" + userId + "/posts",
@@ -64,14 +81,16 @@ module.exports = {
       }
     })
   },
-  sharePost: function (post) {
+  sharePost: function (post, userId) {
     $.ajax({
       method: "POST",
       url: "api/posts/",
       dataType: "json",
       data: {post: post},
       success: function (post) {
-        ApiActions.createNewPost(post);
+        if (userId == window.currentUserId){
+          ApiActions.createNewPost(post);
+        }
       }
     })
   },
@@ -126,6 +145,7 @@ module.exports = {
       }
     })
   },
+
   shareComment: function (comment) {
     $.ajax({
       method: "POST",
@@ -137,6 +157,7 @@ module.exports = {
       }
     })
   },
+
   deleteComment: function (comment) {
     $.ajax({
       method: "DELETE",
@@ -148,6 +169,75 @@ module.exports = {
       }
     })
   },
+
+
+
+
+
+  fetchLikes: function() {
+    $.ajax({
+      url: "api/likes",
+      success: function (data) {
+        ApiActions.receiveAllLikes(data);
+      }
+    })
+  },
+
+  createLike: function(postId) {
+    $.ajax({
+      method: "POST",
+      url: "api/likes",
+      dataType: "json",
+      data: {postId: postId},
+      success: function (data) {
+        ApiActions.createLike(data);
+      }
+    })
+  },
+
+  deleteLike: function(postId, likeId) {
+    $.ajax({
+      method: "DELETE",
+      url: "api/likes/" + likeId,
+      dataType: "json",
+      data: {postId: postId},
+      success: function (data) {
+        ApiActions.deleteLike(data);
+      }
+    })
+  },
+
+  createTimelineLike: function(postId) {
+    $.ajax({
+      method: "POST",
+      url: "api/likes",
+      dataType: "json",
+      data: {postId: postId},
+      success: function (data) {
+        ApiActions.createTimelineLike(data);
+      }
+    })
+  },
+
+  deleteTimelineLike: function(postId, likeId) {
+    $.ajax({
+      method: "DELETE",
+      url: "api/likes/" + likeId,
+      dataType: "json",
+      data: {postId: postId},
+      success: function (data) {
+        ApiActions.deleteTimelineLike(data);
+      }
+    })
+  },
+
+
+
+
+
+
+
+
   fetchAllPhotos: function () {
     $.ajax({
       url: "api/photos",
@@ -156,6 +246,16 @@ module.exports = {
       }
     })
   },
+
+  fetchUserPhotos: function (userId) {
+    $.ajax({
+      url: "api/users/" + userId + "/photos",
+      success: function (photos) {
+        ApiActions.receiveAllPhotos(photos);
+      }
+    })
+  },
+
   fetchSinglePhoto: function () {
     $.ajax({
       url: "api/photo/" + id,
@@ -165,7 +265,6 @@ module.exports = {
     })
   },
   createNewPhoto: function (photo) {
-    console.log(photo);
     $.ajax({
       method: "POST",
       url: "api/photos/",
@@ -187,12 +286,12 @@ module.exports = {
       }
     })
   },
-  deletePhoto: function (photo) {
+  deletePhoto: function (id) {
     $.ajax({
       method: "DELETE",
-      url: "api/photos/" + photo.id,
+      url: "api/photos/" + id,
       dataType: "json",
-      data: {photo: photo},
+      data: {id: id},
       success: function (photo) {
         ApiActions.deletePhoto(photo);
       }
@@ -202,6 +301,20 @@ module.exports = {
 
 
 
+
+
+
+
+
+
+  fetchAllRequests: function (userId) {
+    $.ajax({
+      url: "api/users/" + userId + "/friend_requests",
+      success: function (requests) {
+        ApiActions.receiveAllRequests(requests);
+      }
+    })
+  },
 
 
   fetchAllFriends: function (userId) {
@@ -219,7 +332,7 @@ module.exports = {
       url: "api/friendships/destroy",
       data: {friendId: friendId},
       success: function (data) {
-        ApiActions.removeFriend(data.friends);
+        ApiActions.removeFriend(data);
       }
     })
   },
@@ -235,6 +348,24 @@ module.exports = {
     })
   },
 
+  approveFriendRequest: function (userId) {
+    $.ajax({
+      type: "PATCH",
+      url: "api/friendships/update",
+      data: {userId: userId},
+      success: function (data) {
+        ApiActions.approveFriendRequest(data);
+      }
+    })
+  },
+
+
+
+
+
+
+
+
 
 
   fetchTimelineItems: function () {
@@ -245,6 +376,13 @@ module.exports = {
       }
     })
   },
+
+
+
+
+
+
+
 
 
   logOut: function () {

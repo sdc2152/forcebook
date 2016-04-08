@@ -4,7 +4,7 @@ class Api::PostsController < ApplicationController
     @posts = Post.all
 
     if params[:user_id]
-      @posts = Post.includes({author: :photos}, :comments).where(author_id: params[:user_id]).order(created_at: :desc)
+      @posts = Post.includes({author: :photos}, :comments, {likes: :author}).where(target_id: params[:user_id]).order(created_at: :desc)
     end
   end
 

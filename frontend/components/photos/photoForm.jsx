@@ -14,18 +14,20 @@ var PhotoForm = React.createClass({
       },
 
       function(error, result) {
-        photo.url = result[0].url
-        photo.public_id = result[0].public_id
-
-        ApiUtil.createNewPhoto(photo)
+        if (result !== undefined){
+          photo.url = result[0].url
+          photo.public_id = result[0].public_id
+          console.log(photo);
+          ApiUtil.createNewPhoto(photo)
+        }
       }
     );
   },
 
   render: function() {
     return (
-      <div>
-        <button onClick={this.uploadPhoto.bind(this, event)} />
+      <div className="clickable photoadd" onClick={this.uploadPhoto.bind(this, event)}>
+        <div className="uploadbutton">Upload</div>
       </div>
     );
   }

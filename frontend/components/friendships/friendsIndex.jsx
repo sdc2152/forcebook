@@ -28,20 +28,13 @@ var FriendsIndex = React.createClass({
   },
 
   render: function() {
+
     return (
-      <div id="rightmain friend">
-        <div id="rightcol">
-        </div>
-        <div id="content friend">
-          <div className="friendindexwrapper">
-            <ul className="friendul">
-              {this.state.friends.map(function (friend, idx) {
-                return <FriendIndexItem key={idx} friend={friend} user={this.props.user}/>;
-              }.bind(this))}
-            </ul>
-          </div>
-        </div>
-      </div>
+      <ul className="friendul">
+        {this.state.friends.map(function (friend, idx) {
+          return <FriendIndexItem key={idx} friend={friend} user={this.props.user}/>;
+        }.bind(this))}
+      </ul>
       )}
     })
 

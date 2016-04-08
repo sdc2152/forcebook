@@ -30,9 +30,7 @@ var CommentIndex = React.createClass({
             <div className="likecountwrapper">
             </div>
             <ul className="commentlist">
-              <div className="commentexpandwrapper">
 
-              </div>
               {this.state.comments.map(function (comment, idx) {
                 return <CommentIndexItem key={idx} comment={comment} post={this.props.post}/>;
               }.bind(this))}

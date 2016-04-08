@@ -6,15 +6,17 @@ var FriendStore = require('../stores/friendStore');
 var FriendButton = React.createClass({
 
   getInitialState: function() {
-    return {areFriends: FriendStore.areFriends(this.props.currentProfileId)}
+    return {areFriends: FriendStore.areFriends(window.currentUserId)}
   },
 
   _onChange: function() {
-    this.setState({areFriends: FriendStore.areFriends(this.props.currentProfileId)})
+    this.setState({areFriends: FriendStore.areFriends(window.currentUserId)})
   },
+
   componentDidMount: function() {
     this.friendListener = FriendStore.addListener(this._onChange);
   },
+
   componentWillUnmount: function(){
     this.friendListener.remove()
   },

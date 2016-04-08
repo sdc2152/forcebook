@@ -3,8 +3,12 @@ var UserStore = require('../stores/userStore');
 var ApiUtil = require('../util/apiUtil');
 var PostForm = require('./posts/postForm');
 var PostIndex = require('./posts/postIndex');
+
 var PhotoShow = require('./photos/photoShow');
 var PhotoForm = require('./photos/photoForm');
+
+var PostStore = require('../stores/postStore.js');
+
 var About = require('./about');
 var hashHistory = require('react-router').hashHistory;
 var FriendsIndex = require('./friendships/friendsIndex');
@@ -15,26 +19,29 @@ var FriendButton = require('./friendButton');
 
 var UserSettings = React.createClass({
   getInitialState: function() {
-    return {user: UserStore.find(this.props.params.user_id),
-      areFriends: FriendStore.areFriends(this.props.params.user_id)}
+    return {user: UserStore.displayedUser()}
   },
 
   _onChange: function() {
-    this.setState({areFriends: FriendStore.areFriends(this.props.params.user_id)})
+    this.setState({user: UserStore.displayedUser()})
   },
 
   componentDidMount: function() {
+    ApiUtil.fetchSingleUser(this.props.params.user_id)
     this.friendListener = FriendStore.addListener(this._onChange);
+    this.listener = UserStore.addListener(this._onChange);
   },
 
   componentWillReceiveProps: function(newProps){
-    ApiUtil.fetchAllFriends(window.currentUserId);
-    this.setState({user: UserStore.find(newProps.params.user_id),
-    areFriends: FriendStore.areFriends(this.props.params.user_id) });
+    ApiUtil.fetchSingleUser(this.props.params.user_id);
+    ApiUtil.fetchAllFriends(newProps.params.user_id);
+    ApiUtil.fetchAllPosts(newProps.params.user_id);
+    this.setState({user: UserStore.displayedUser()});
   },
 
   componentWillUnmount: function(){
     this.friendListener.remove()
+    this.listener.remove()
   },
 
   redirectPostIndex: function(event) {
@@ -52,6 +59,11 @@ var UserSettings = React.createClass({
     hashHistory.push("users/" + this.props.params.user_id + "/friends")
   },
 
+  redirectPhotos: function (event) {
+    event.preventDefault()
+    hashHistory.push("users/" + this.props.params.user_id + "/photos")
+  },
+
 
   render: function() {
     if (this.state.user !== undefined){
@@ -60,7 +72,7 @@ var UserSettings = React.createClass({
           <div id="usercontentwrappers" className="settingwrap">
             <div className="settingsuserinfo">
               <div className="profilepicmain">
-                <PhotoShow url={this.state.user.prof_url} type="profile_pic"/>
+                <PhotoShow clickAction={this.redirectPhotos} url={this.state.user.prof_url} type="profile_pic"/>
               </div>
               <div className="profilenamemain">
                 <div className="settingusername">
@@ -71,7 +83,7 @@ var UserSettings = React.createClass({
             <div className="settingheader">
               <div className="settingheaderbanner">
                 <FriendButton currentProfileId={this.props.params.user_id}/>
-                <PhotoShow url={this.state.user.banner_url} type="banner_pic"/>
+                <PhotoShow clickAction={this.redirectFriendsIndex} url={this.state.user.banner_url} type="banner_pic"/>
               </div>
               <div className="settingheaderbottom">
                 <div className="settingbottomleft">
@@ -87,7 +99,7 @@ var UserSettings = React.createClass({
 
                     <a title="timeline">
                       <span className="rightbotomimagewrap"></span>
-                      <div onClick={this.redirectPostIndex}>Timeline</div>
+                      <div className="clickable" onClick={this.redirectPostIndex}>Timeline</div>
                     </a>
                   </div>
                   <div className="settingnavbottomwrapper">
@@ -97,7 +109,7 @@ var UserSettings = React.createClass({
 
                     <a title="about">
                       <span className="rightbotomimagewrap"></span>
-                      <div onClick={this.redirectAbout}>About</div>
+                      <div className="clickable" onClick={this.redirectAbout}>About</div>
                     </a>
                   </div>
 
@@ -108,7 +120,18 @@ var UserSettings = React.createClass({
 
                     <a title="friends">
                       <span className="rightbotomimagewrap"></span>
-                      <div onClick={this.redirectFriendsIndex}>Friends</div>
+                      <div className="clickable" onClick={this.redirectFriendsIndex}>Friends</div>
+                    </a>
+                  </div>
+
+                  <div className="settingnavbottomwrapper">
+                    <div className="rightbottomcontentwrapper">
+                      <a className="photos" />
+                    </div>
+
+                    <a title="photos">
+                      <span className="rightbotomimagewrap"></span>
+                      <div className="clickable" onClick={this.redirectPhotos}>Photos</div>
                     </a>
                   </div>
                 </div>
@@ -116,16 +139,8 @@ var UserSettings = React.createClass({
               </div>
             </div>
 
+            {this.props.children}
           </div>
-          <div id="leftmain">
-            <div className="photowrapper">
-
-            </div>
-            <div className="friendswrapper">
-
-            </div>
-          </div>
-          {this.props.children}
         </div>
       );
     }
