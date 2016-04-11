@@ -1,27 +1,28 @@
-#Forcebook
+== README
 
-[Link](http://forcebook.herokuapp.com/home)
+This README would normally document whatever steps are necessary to get the
+application up and running.
 
-##Description
-Forcebook is a web application for connecting characters from the Star Wars world. It was inspired by Facebook and built using Ruby on Rails and React on a Flux architecture.
+Things you may want to cover:
 
-![Alt text](./app/assets/images/img5.png)
+* Ruby version
 
-##Features
-* Sign up/in with email
-* Create/Delete posts
-* View posts in feed/profile in most recent order
-* Send/Accept/Decline friend requests from other users
-* Unfriend friends
-* Upload images through Cloudinary
-* Rails back end, React.js and Flux front end
-* Search across multiple attributes and through associations
+* System dependencies
 
-### To-Do:
+* Configuration
 
-* [] Profile and cover photo upload/update
-* [] Friend search
-* [] Infinite Scroll
-* [] Polymorphic comments (comment on comments)
-* [] Email confirmation validation
-* [] Privacy settings for posts/photos
+* Database creation
+
+* Database initialization
+
+* How to run the test suite
+
+* Services (job queues, cache servers, search engines, etc.)
+
+* Deployment instructions
+
+* ...
+
+
+Please feel free to use a different markup language if you do not plan to run
+<tt>rake doc:app</tt>.
