@@ -1,6 +1,6 @@
 #Forcebook
 
-[Link](http://www.forcebook.herokuapp.com)
+[Link](http://forcebook.herokuapp.com/home)
 
 ##Description
 Forcebook is a web application for connecting characters from the Star Wars world. It was inspired by Facebook and built using Ruby on Rails and React on a Flux architecture.
