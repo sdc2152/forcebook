@@ -5,7 +5,14 @@
 ##Description
 Forcebook is a web application for connecting characters from the Star Wars world. It was inspired by Facebook and built using Ruby on Rails and React on a Flux architecture.
 
-![Alt text](./app/assets/images/img5.png)
+##Log In
+![Alt text](./app/assets/images/log_in.png)
+
+##Home
+![Alt text](./app/assets/images/home_screen.png)
+
+##Profile
+![Alt text](./app/assets/images/profile.png)
 
 ##Features
 * Sign up/in with email
