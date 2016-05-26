@@ -43,13 +43,13 @@ var NavButtons = React.createClass({
           </div>
 
           <div className="adjustprofilebutton">
-            <ul className="navbutton">messsages
+            <ul className="navbutton">
 
             </ul>
           </div>
 
           <div className="adjustprofilebutton">
-            <ul className="navbutton">notifications
+            <ul className="navbutton">
 
             </ul>
           </div>
